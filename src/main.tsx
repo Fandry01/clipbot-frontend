@@ -7,6 +7,9 @@ import Library from './pages/Library'
 import Root from './pages/Root'
 import Uploads from './pages/Uploads'
 import ProjectClips from './pages/ProjectClips'
+import ClipEditor from "./pages/ClipEditor";
+import MediaDetail from "./pages/MediaDetail";
+import BrandTemplate from "./pages/BrandTemplate";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +20,9 @@ const router = createBrowserRouter([
       { path: '/dashboard/library', element: <Library /> },
       { path: '/dashboard/uploads', element: <Uploads /> },
       { path: '/dashboard/project/:id', element: <ProjectClips /> },
+      { path: '/dashboard/media/:id', element: <MediaDetail /> },
+      { path: '/dashboard/clip/:id/edit', element: <ClipEditor /> },
+      { path: '/dashboard/brand-template', element: <BrandTemplate /> },
     ],
   },
 ])

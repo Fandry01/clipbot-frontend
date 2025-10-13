@@ -11,6 +11,7 @@ export default function Root() {
             <Link className={`btn-ghost ${pathname.includes('/dashboard/overview') ? 'bg-white/10' : ''}`} to="/dashboard/overview">Overview</Link>
             <Link className={`btn-ghost ${pathname.includes('/dashboard/library') ? 'bg-white/10' : ''}`} to="/dashboard/library">Library</Link>
             <Link className={`btn-ghost ${pathname.includes('/dashboard/uploads') ? 'bg-white/10' : ''}`} to="/dashboard/uploads">Uploads</Link>
+              <Link className={`btn-ghost ${pathname.includes('/dashboard/brand-template') ? 'bg-white/10' : ''}`} to="/dashboard/brand-template">Brand template</Link>
           </nav>
           <div className="flex items-center gap-3">
             <button className="btn-ghost">🔔</button>
