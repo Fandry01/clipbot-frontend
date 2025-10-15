@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.3",
+    "axios": "^1.12.2",
     "cheerio": "^1.1.2",
     "express": "^5.1.0",
     "lucide-react": "0.424.0",

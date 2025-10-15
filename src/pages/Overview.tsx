@@ -1,52 +1,137 @@
-import { useState } from 'react'
+// src/pages/Overview.tsx
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import CenterUploadCard from '../components/CenterUploadCard'
 import QuickActionsRail from '../components/QuickActionsRail'
 import StorageChips from '../components/StorageChips'
-import ProjectCard, { Project } from '../components/ProjectCard'
+import ProjectCard from '../components/ProjectCard'
 import IntakePanel from '../components/IntakePanel'
-import { useNavigate } from 'react-router-dom'
+import {
+  useProjects,
+  useCreateProject,
+  useCreateMediaFromUrl,
+  useLinkMediaToProject,
+  useMetadata,
+} from '../api/hooks'
 
-const projects: Project[] = [
-    { id: '1', title: '24 Hours with Danny Duncan', thumb: '/src/assets/thumb1.jpg', plan: 'Free', status: 'Demo', duration: '12:31', coherence: 0.81, hook: 0.67 },
-    { id: '2', title: 'Curry Drills 12 Threes',      thumb: '/src/assets/thumb2.jpg', plan: 'Free', status: 'Demo', duration: '08:22', coherence: 0.76, hook: 0.72 },
-    { id: '3', title: 'Tal Wilkenfeld #408 Lex Fridman', thumb: '/src/assets/thumb3.jpg', plan: 'Pro', status: 'Ready', duration: '09:05', coherence: 0.88, hook: 0.69 },
-]
+
+const ownerId =
+  (localStorage.getItem('ownerId') as string) ||
+  '00000000-0000-0000-0000-000000000001'
 
 export default function Overview() {
-    const [source, setSource] = useState<{type:'url'|'file', value:string, name?:string} | null>(null)
-    const nav = useNavigate()
+  const [source, setSource] = useState<{ type: 'url' | 'file'; value: string; name?: string } | null>(null)
+  const nav = useNavigate()
 
-    return (
-        <div>
-            {!source ? (
-                <>
-                    <CenterUploadCard onStart={(src) => setSource(src)} />
-                    <QuickActionsRail />
-                    <div className="flex justify-end mt-4"><StorageChips /></div>
+  // data hooks
+  const projectsQ = useProjects(ownerId, 0, 12)
+  const createProject = useCreateProject()
+  const createFromUrl = useCreateMediaFromUrl()
+  const linkMedia = useLinkMediaToProject()
+  const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
 
-                    <section className="mt-8">
-                        <div className="flex items-baseline justify-between mb-3">
-                            <h2 className="text-lg font-semibold">All projects</h2>
-                            <div className="text-sm text-muted">All · Saved</div>
-                        </div>
-                        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-                            {projects.map(p => <ProjectCard key={p.id} project={p} />)}
-                        </div>
-                    </section>
-                </>
-            ) : (
-                // INTAKE MODE
-                <IntakePanel
-                    source={source}
-                    onStartJob={(payload) => {
-                        // TODO: call backend; nu mocken we een jobId en gaan naar processing
-                        console.log('start job', payload)
-                        const jobId = Math.random().toString(36).slice(2,8)
-                        nav(`/dashboard/processing/${jobId}`)
-                    }}
-                />
+  const isBusy = createProject.isPending || createFromUrl.isPending || linkMedia.isPending
+
+  const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
+
+  return (
+    <div>
+      {!source ? (
+        <>
+          <CenterUploadCard onStart={(src) => setSource(src)} />
+          <QuickActionsRail />
+          <div className="flex justify-end mt-4">
+            <StorageChips />
+          </div>
+
+          <section className="mt-8">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-lg font-semibold">All projects</h2>
+              <div className="text-sm text-muted">All · Saved</div>
+            </div>
+
+            {projectsQ.isLoading && <div className="text-sm text-muted">Loading projects…</div>}
+
+            {projectsQ.isError && (
+              <div className="text-sm text-red-400">
+                Failed to load projects.{' '}
+                <button className="underline" onClick={() => projectsQ.refetch()}>
+                  Retry
+                </button>
+              </div>
             )}
 
-        </div>
-    )
+            {!projectsQ.isLoading && !projectsQ.isError && projects.length === 0 && (
+              <div className="text-sm text-muted border border-dashed border-border rounded-lg p-6">
+                No projects yet. Start by pasting a URL or uploading a file above.
+              </div>
+            )}
+
+            {projects.length > 0 && (
+              <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                {projects.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    project={{
+                      id: p.id,
+                      title: p.title,
+                      thumb: (p as any).thumbUrl || '/src/assets/thumb1.jpg',
+                      plan: 'Free',
+                      status: '—',
+                      duration: '',
+                      coherence: 0,
+                      hook: 0,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        <IntakePanel
+          source={source}
+          disabled={isBusy}
+          busyLabel={
+            createFromUrl.isPending
+              ? 'Registering media…'
+              : linkMedia.isPending
+              ? 'Linking to project…'
+              : createProject.isPending
+              ? 'Creating project…'
+              : undefined
+          }
+          onStartJob={async (payload) => {
+            try {
+              const title = metaQ.data?.title || (payload as any)?.title || 'New project'
+
+              // 1) kies of maak project
+              const project =
+                projects[0] ||
+                (await createProject.mutateAsync({ ownerId, title, templateId: null }))
+
+              // 2) media registreren
+              let mediaId: string
+              if (source.type === 'url') {
+                const m = await createFromUrl.mutateAsync({ ownerId, url: source.value })
+                mediaId = m.mediaId
+              } else {
+                // TODO: file-upload flow koppelen aan /v1/uploads/local + /v1/media
+                throw new Error('Bestandsupload nog niet gekoppeld')
+              }
+
+              // 3) link media → project
+              await linkMedia.mutateAsync({ projectId: project.id, ownerId, mediaId })
+
+              // 4) navigeer naar project clips
+              nav(`/dashboard/project/${project.id}`)
+            } catch (e: any) {
+              alert(e?.message || 'Failed to start')
+            }
+          }}
+          onCancel={() => setSource(null)}
+        />
+      )}
+    </div>
+  )
 }
