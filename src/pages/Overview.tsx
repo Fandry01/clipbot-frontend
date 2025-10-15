@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CenterUploadCard from '../components/CenterUploadCard'
 import QuickActionsRail from '../components/QuickActionsRail'
+import { sampleProject } from '../sample/sampleData'
 import StorageChips from '../components/StorageChips'
 import ProjectCard from '../components/ProjectCard'
 import IntakePanel from '../components/IntakePanel'
@@ -13,6 +14,8 @@ import {
   useLinkMediaToProject,
   useMetadata,
 } from '../api/hooks'
+import ProjectCardSkeleton from "../components/ProjectCardSkeleton";
+
 
 
 const ownerId =
@@ -33,6 +36,7 @@ export default function Overview() {
   const isBusy = createProject.isPending || createFromUrl.isPending || linkMedia.isPending
 
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
+ const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
 
   return (
     <div>
@@ -50,7 +54,13 @@ export default function Overview() {
               <div className="text-sm text-muted">All · Saved</div>
             </div>
 
-            {projectsQ.isLoading && <div className="text-sm text-muted">Loading projects…</div>}
+            {projectsQ.isLoading && (
+                <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                      <ProjectCardSkeleton key={i} />
+                  ))}
+                </div>
+            )}
 
             {projectsQ.isError && (
               <div className="text-sm text-red-400">
@@ -61,10 +71,20 @@ export default function Overview() {
               </div>
             )}
 
-            {!projectsQ.isLoading && !projectsQ.isError && projects.length === 0 && (
-              <div className="text-sm text-muted border border-dashed border-border rounded-lg p-6">
-                No projects yet. Start by pasting a URL or uploading a file above.
-              </div>
+            {showEmpty && (
+                <div className="space-y-3">
+                  <div className="text-sm text-muted border border-dashed border-border rounded-lg p-6">
+                    No projects yet. Start by pasting a URL or uploading a file above.
+                  </div>
+
+                  {/* Sample fallback */}
+                  <div>
+                    <div className="text-xs text-muted mb-2">Sample (click to explore)</div>
+                    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                      <ProjectCard project={sampleProject} />
+                    </div>
+                  </div>
+                </div>
             )}
 
             {projects.length > 0 && (

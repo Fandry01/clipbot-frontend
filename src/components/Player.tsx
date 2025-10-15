@@ -1,4 +1,4 @@
-import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
+import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react'
 
 export type PlayerHandle = {
   seek: (t: number) => void
@@ -15,7 +15,7 @@ type Props = {
   onTime?: (t: number) => void   // ✅ meld currentTime terug
 }
 
-const Player = React.forwardRef<PlayerHandle, Props>(function Player(
+const Player = forwardRef<PlayerHandle, Props>(function Player(
   { src, poster, aspect = '16:9', onTime },
   ref
 ) {

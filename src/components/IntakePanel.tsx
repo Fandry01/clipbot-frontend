@@ -5,12 +5,22 @@ const STORAGE_KEY  = 'brandTemplate.v1'
 
 type Preset = { id: string; name: string; tpl: any }
 
+type Source = { type: 'url' | 'file'; value: string; name?: string }
+
 export default function IntakePanel({
                                         source,
                                         onStartJob,
+                                        onCancel,
+                                        disabled = false,
+                                        busyLabel,
                                     }: {
-    source: { type: 'url' | 'file'; value: string; name?: string }
-    onStartJob: (payload: any) => void
+    source: Source
+    onStartJob: (payload: any) => void | Promise<void>
+    onCancel?: () => void
+    /** disable alle inputs/acties tijdens mutations */
+    disabled?: boolean
+    /** tekst voor de primary knop tijdens busy (vb. "Registering media…") */
+    busyLabel?: string
 }) {
     // essentials
     const [lang, setLang] = useState('en')
@@ -23,6 +33,8 @@ export default function IntakePanel({
     const [prompt, setPrompt] = useState('')
     const [srtName, setSrtName] = useState('')
     const srtRef = useRef<HTMLInputElement>(null)
+
+    // timeframe (demo waardes)
     const duration = 58 * 60 + 10
     const [from, setFrom] = useState(0)
     const [to, setTo] = useState(duration)
@@ -41,6 +53,13 @@ export default function IntakePanel({
         return Math.ceil(1 + minutes * 0.1 * mult)
     }, [from, to, model])
 
+    const handleStart = async () => {
+        await onStartJob({
+            source, lang, genre, clipLength,
+            model, prompt, srtName, from, to, estimatedCredits: credits
+        })
+    }
+
     return (
         <div className="max-w-4xl mx-auto space-y-4">
             {/* source header */}
@@ -53,29 +72,47 @@ export default function IntakePanel({
 
             {/* 1) VIDEO PREVIEW */}
             <div className="relative bg-white/5 rounded-xl overflow-hidden shadow-card aspect-video w-full">
-                <img src="/src/assets/thumb1.jpg" className="w-full h-full object-cover" />
+                <img src="/thumb1.jpg" className="w-full h-full object-cover" alt="Preview" />
             </div>
 
             {/* 2) ESSENTIAL CONTROLS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Select label="Speech language" value={lang} onChange={setLang} options={[
-                    {value:'auto', label:'Auto'}, {value:'en', label:'English'}, {value:'nl', label:'Dutch'}, {value:'de', label:'German'}
-                ]}/>
-                <Select label="Genre" value={genre} onChange={(v)=>setGenre(v as any)} options={[
-                    {value:'auto', label:'Auto'}, {value:'educational', label:'Educational'}, {value:'podcast', label:'Podcast'}, {value:'vlog', label:'Vlog'}, {value:'gaming', label:'Gaming'}
-                ]}/>
-                <Select label="Clip length" value={clipLength} onChange={(v)=>setClipLength(v as any)} options={[
-                    {value:'auto', label:'Auto'}, {value:'short', label:'Very short'}, {value:'0-30s', label:'0–30s'}, {value:'0-60s', label:'0–60s'}, {value:'0-3m', label:'0–3m'}
-                ]}/>
+                <Select
+                    label="Speech language"
+                    value={lang}
+                    onChange={setLang}
+                    options={[
+                        {value:'auto', label:'Auto'}, {value:'en', label:'English'}, {value:'nl', label:'Dutch'}, {value:'de', label:'German'}
+                    ]}
+                    disabled={disabled}
+                />
+                <Select
+                    label="Genre"
+                    value={genre}
+                    onChange={(v)=>setGenre(v as any)}
+                    options={[
+                        {value:'auto', label:'Auto'}, {value:'educational', label:'Educational'}, {value:'podcast', label:'Podcast'}, {value:'vlog', label:'Vlog'}, {value:'gaming', label:'Gaming'}
+                    ]}
+                    disabled={disabled}
+                />
+                <Select
+                    label="Clip length"
+                    value={clipLength}
+                    onChange={(v)=>setClipLength(v as any)}
+                    options={[
+                        {value:'auto', label:'Auto'}, {value:'short', label:'Very short'}, {value:'0-30s', label:'0–30s'}, {value:'0-60s', label:'0–60s'}, {value:'0-3m', label:'0–3m'}
+                    ]}
+                    disabled={disabled}
+                />
             </div>
 
             {/* 3) QUICK PRESETS */}
             <div className="card p-3">
                 <div className="text-sm font-medium mb-2">Quick presets</div>
                 <div className="flex flex-wrap gap-2">
-                    <button className="btn-ghost" onClick={()=>setClipLength('0-30s')}>0–30s Reels</button>
-                    <button className="btn-ghost" onClick={()=>{setClipLength('0-60s'); setGenre('podcast')}}>Podcast 60s</button>
-                    <button className="btn-ghost" onClick={()=>{ setClipLength('auto'); setGenre('auto'); setModel('quality') }}>Quality+</button>
+                    <button className="btn-ghost" onClick={()=>setClipLength('0-30s')} disabled={disabled}>0–30s Reels</button>
+                    <button className="btn-ghost" onClick={()=>{setClipLength('0-60s'); setGenre('podcast')}} disabled={disabled}>Podcast 60s</button>
+                    <button className="btn-ghost" onClick={()=>{ setClipLength('auto'); setGenre('auto'); setModel('quality') }} disabled={disabled}>Quality+</button>
                 </div>
             </div>
 
@@ -86,7 +123,7 @@ export default function IntakePanel({
                     {activeTpl && <span className="badge">Active: {activeTpl.captionStyle ?? 'template'}</span>}
                     {presets.length === 0 && <span className="text-sm text-muted">No saved presets yet</span>}
                     {presets.map(p => (
-                        <button key={p.id} className="btn-ghost" onClick={()=>alert(`Would apply preset: ${p.name}`)}>
+                        <button key={p.id} className="btn-ghost" onClick={()=>alert(`Would apply preset: ${p.name}`)} disabled={disabled}>
                             {p.name}
                         </button>
                     ))}
@@ -95,22 +132,33 @@ export default function IntakePanel({
 
             {/* ADVANCED (collapsible) */}
             <div className="card p-3">
-                <button className="btn-ghost" onClick={()=>setShowAdv(v=>!v)}>
+                <button className="btn-ghost" onClick={()=>setShowAdv(v=>!v)} disabled={disabled}>
                     {showAdv ? 'Hide advanced' : 'Show advanced'}
                 </button>
 
                 {showAdv && (
                     <div className="mt-3 space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <Select label="Clip model" value={model} onChange={(v)=>setModel(v as any)} options={[
-                                {value:'auto', label:'Auto'}, {value:'quality', label:'Quality+'}, {value:'speed', label:'Speed'}
-                            ]}/>
+                            <Select
+                                label="Clip model"
+                                value={model}
+                                onChange={(v)=>setModel(v as any)}
+                                options={[{value:'auto', label:'Auto'}, {value:'quality', label:'Quality+'}, {value:'speed', label:'Speed'}]}
+                                disabled={disabled}
+                            />
                             <label className="text-sm">
                                 <div className="text-muted mb-1">Upload .SRT (optional)</div>
-                                <button className="btn-ghost w-full" onClick={() => srtRef.current?.click()}>Choose .srt</button>
-                                <input ref={srtRef} hidden type="file" accept=".srt" onChange={(e) => {
-                                    const f = e.target.files?.[0]; if (f) setSrtName(f.name)
-                                }} />
+                                <button className="btn-ghost w-full" onClick={() => srtRef.current?.click()} disabled={disabled}>Choose .srt</button>
+                                <input
+                                    ref={srtRef}
+                                    hidden
+                                    type="file"
+                                    accept=".srt"
+                                    onChange={(e) => {
+                                        const f = e.target.files?.[0]; if (f) setSrtName(f.name)
+                                    }}
+                                    disabled={disabled}
+                                />
                                 {srtName && <div className="mt-1 badge">{srtName}</div>}
                             </label>
                         </div>
@@ -122,6 +170,7 @@ export default function IntakePanel({
                                 placeholder="Example: Compile all the hilarious moments"
                                 value={prompt}
                                 onChange={(e)=>setPrompt(e.target.value)}
+                                disabled={disabled}
                             />
                         </div>
 
@@ -130,18 +179,21 @@ export default function IntakePanel({
                 )}
             </div>
 
-            {/* START */}
+            {/* START / CANCEL */}
             <div className="flex items-center justify-end gap-2">
                 <div className="text-sm text-muted">Using video you don’t own may violate copyright laws.</div>
+                {onCancel && (
+                    <button className="btn-ghost" onClick={onCancel} disabled={disabled}>
+                        Cancel
+                    </button>
+                )}
                 <button
                     className="btn-primary"
-                    onClick={() => onStartJob({
-                        source, lang, genre, clipLength,
-                        // advanced payload (kan leeg zijn als verborgen)
-                        model, prompt, srtName, from, to, estimatedCredits: credits
-                    })}
+                    onClick={handleStart}
+                    disabled={disabled}
+                    title={disabled && busyLabel ? busyLabel : 'Start clipping'}
                 >
-                    Start clipping
+                    {busyLabel ?? 'Start clipping'}
                 </button>
             </div>
         </div>
@@ -150,13 +202,23 @@ export default function IntakePanel({
 
 /* small UI helpers */
 function Select({
-                    label, value, onChange, options
-                }: { label: string; value: string; onChange: (v:string)=>void; options:{value:string,label:string}[] }) {
+                    label, value, onChange, options, disabled
+                }: {
+    label: string
+    value: string
+    onChange: (v:string)=>void
+    options:{value:string,label:string}[]
+    disabled?: boolean
+}) {
     return (
         <label className="text-sm">
             <div className="text-muted mb-1">{label}</div>
-            <select className="w-full bg-transparent border border-border rounded-lg px-3 py-2 text-sm"
-                    value={value} onChange={(e)=>onChange(e.target.value)}>
+            <select
+                className="w-full bg-transparent border border-border rounded-lg px-3 py-2 text-sm"
+                value={value}
+                onChange={(e)=>onChange(e.target.value)}
+                disabled={disabled}
+            >
                 {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
         </label>
@@ -171,11 +233,8 @@ function Timeframe({
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <div className="text-sm">Processing timeframe <span className="badge">Credit saver</span></div>
-                <div className="text-xs text-muted">
-                    Total {fmt(from)} – {fmt(to)} / {fmt(duration)}
-                </div>
+                <div className="text-xs text-muted">Total {fmt(from)} – {fmt(to)} / {fmt(duration)}</div>
             </div>
-            {/* simple from/to inputs – je dual slider kan hier ook blijven, dit is compacter */}
             <div className="grid grid-cols-2 gap-2">
                 <Input label="From (sec)" value={from} onChange={(v)=>onChange(clamp(v), to)} />
                 <Input label="To (sec)"   value={to}   onChange={(v)=>onChange(from, clamp(v))} />
