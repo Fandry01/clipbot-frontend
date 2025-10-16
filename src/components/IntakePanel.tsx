@@ -6,6 +6,14 @@ const STORAGE_KEY  = 'brandTemplate.v1'
 type Preset = { id: string; name: string; tpl: any }
 
 type Source = { type: 'url' | 'file'; value: string; name?: string }
+type MetadataLite = {
+  platform: string
+  url: string
+  title?: string | null
+  author?: string | null
+  durationSec?: number | null
+  thumbnail?: string | null
+}
 
 export default function IntakePanel({
                                         source,
@@ -13,6 +21,10 @@ export default function IntakePanel({
                                         onCancel,
                                         disabled = false,
                                         busyLabel,
+                                        metadata,       
+                                        metaLoading,   
+                                        metaError,
+                                    
                                     }: {
     source: Source
     onStartJob: (payload: any) => void | Promise<void>
@@ -21,6 +33,9 @@ export default function IntakePanel({
     disabled?: boolean
     /** tekst voor de primary knop tijdens busy (vb. "Registering media…") */
     busyLabel?: string
+    metadata?: MetadataLite
+    metaLoading?: boolean
+    metaError?: string
 }) {
     // essentials
     const [lang, setLang] = useState('en')
@@ -33,6 +48,7 @@ export default function IntakePanel({
     const [prompt, setPrompt] = useState('')
     const [srtName, setSrtName] = useState('')
     const srtRef = useRef<HTMLInputElement>(null)
+    const [title, setTitle] = useState('')
 
     // timeframe (demo waardes)
     const duration = 58 * 60 + 10
@@ -59,6 +75,12 @@ export default function IntakePanel({
             model, prompt, srtName, from, to, estimatedCredits: credits
         })
     }
+      
+    const fmtDur = (sec?: number | null) => {
+    if (!sec && sec !== 0) return undefined
+    const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
+    return `${m}:${String(s).padStart(2,'0')}`
+  }
 
     return (
         <div className="max-w-4xl mx-auto space-y-4">
@@ -69,11 +91,65 @@ export default function IntakePanel({
                 </div>
                 <div className="badge">Credit usage ~ {credits}</div>
             </div>
-
-            {/* 1) VIDEO PREVIEW */}
-            <div className="relative bg-white/5 rounded-xl overflow-hidden shadow-card aspect-video w-full">
-                <img src="/thumb1.jpg" className="w-full h-full object-cover" alt="Preview" />
+            {/* ✅ METADATA BANNER (alleen bij URL) */}
+      {source.type === 'url' && (
+        <div className="card overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr]">
+            {/* Thumbnail */}
+            <div className="bg-white/5 aspect-video sm:aspect-auto sm:h-36">
+              {metaLoading ? (
+                <div className="w-full h-full animate-pulse bg-white/10" />
+              ) : metadata?.thumbnail ? (
+                <img src={metadata.thumbnail} alt={metadata.title ?? 'thumbnail'} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-muted">No thumbnail</div>
+              )}
             </div>
+            {/* Info */}
+            <div className="p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="badge">{metadata?.platform ?? 'Unknown'}</span>
+                {metadata?.durationSec != null && (
+                  <span className="badge">{fmtDur(metadata.durationSec)}</span>
+                )}
+                {metaLoading && <span className="text-xs text-muted">Loading metadata…</span>}
+                {metaError && <span className="text-xs text-red-400">{metaError}</span>}
+              </div>
+              <div className="text-sm font-medium line-clamp-2">
+                {metadata?.title || '—'}
+              </div>
+              <div className="text-xs text-muted">{metadata?.author || '—'}</div>
+              <div className="pt-2">
+                <button
+                  className="btn-ghost text-xs"
+                  onClick={() => metadata?.title && setTitle(metadata.title)}
+                  disabled={disabled || !metadata?.title}
+                  title="Use as project title"
+                >
+                  Use as title
+                </button>
+                <a
+                  href={metadata?.url || source.value}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-ghost text-xs ml-2"
+                >
+                  Open source
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1) VIDEO PREVIEW */}
+      <div className="relative bg-white/5 rounded-xl overflow-hidden shadow-card aspect-video w-full">
+        <img
+          src={metadata?.thumbnail || '/thumb1.jpg'}
+          className="w-full h-full object-cover"
+          alt="Preview"
+        />
+      </div>
 
             {/* 2) ESSENTIAL CONTROLS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

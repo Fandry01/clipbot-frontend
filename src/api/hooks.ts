@@ -4,7 +4,7 @@ import type {
   Page, ProjectResponse, ProjectListItem, MediaResponse, MetadataResponse, ClipResponse,
   TranscriptResponse, JobResponse, TemplateResponse, AppliedTemplateResponse, UUID
 } from './types'
-
+import axios from 'axios'
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
   return useQuery({
@@ -73,16 +73,18 @@ export function useMedia(id: UUID) {
     }
   })
 }
+
 export function useMetadata(url?: string) {
   return useQuery({
     enabled: !!url,
     queryKey: ['metadata', url],
     queryFn: async () => {
-      const { data } = await api.get<MetadataResponse>(`/v1/metadata`, { params: { url }})
+      const { data } = await api.get<MetadataResponse>(`/v1/metadata`, { params: { url } })
       return data
     }
   })
 }
+
 export function useCreateMediaFromUrl() {
   return useMutation({
     mutationFn: async (p: { ownerId: UUID; url: string; source?: string }) => {
@@ -91,6 +93,41 @@ export function useCreateMediaFromUrl() {
     }
   })
 }
+/** ====== Upload ====== */
+export function useUploadLocal() {
+  const controllerRef = { current: null as AbortController | null }
+
+  const upload = async (p: { owner: string; file: File; objectKey?: string; onProgress?: (pct:number)=>void }) => {
+    const form = new FormData()
+    form.append('owner', p.owner)
+    form.append('file', p.file)
+    if (p.objectKey) form.append('objectKey', p.objectKey)
+
+    const ctrl = new AbortController()
+    controllerRef.current = ctrl
+
+    const { data } = await axios.post(
+      `/v1/uploads/local`,
+      form,
+      {
+        signal: ctrl.signal,
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          if (p.onProgress && e.total) p.onProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      }
+    )
+    return data as { mediaId: string; assetId: string; objectKey: string; sizeBytes: number }
+  }
+
+  const cancel = () => controllerRef.current?.abort()
+
+  return { upload, cancel }
+}
+
+
+
+
 
 /** ====== TRANSCRIPTS ====== */
 export function useTranscriptByMedia(mediaId?: UUID, lang?: string, provider?: string) {

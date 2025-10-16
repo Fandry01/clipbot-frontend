@@ -15,8 +15,7 @@ import {
   useMetadata,
 } from '../api/hooks'
 import ProjectCardSkeleton from "../components/ProjectCardSkeleton";
-
-
+import { useUploadLocal } from '../api/hooks'
 
 const ownerId =
   (localStorage.getItem('ownerId') as string) ||
@@ -36,7 +35,9 @@ export default function Overview() {
   const isBusy = createProject.isPending || createFromUrl.isPending || linkMedia.isPending
 
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
- const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
+  const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
+  const uploadLocal = useUploadLocal()
+  const [uploadPct, setUploadPct] = useState<number | null>(null) 
 
   return (
     <div>
@@ -111,9 +112,11 @@ export default function Overview() {
       ) : (
         <IntakePanel
           source={source}
-          disabled={isBusy}
+          disabled={isBusy || uploadPct !== null}
           busyLabel={
-            createFromUrl.isPending
+            uploadPct !== null
+              ? `Uploading… ${uploadPct}%` 
+              :createFromUrl.isPending
               ? 'Registering media…'
               : linkMedia.isPending
               ? 'Linking to project…'
@@ -132,12 +135,23 @@ export default function Overview() {
 
               // 2) media registreren
               let mediaId: string
+
               if (source.type === 'url') {
                 const m = await createFromUrl.mutateAsync({ ownerId, url: source.value })
                 mediaId = m.mediaId
               } else {
-                // TODO: file-upload flow koppelen aan /v1/uploads/local + /v1/media
-                throw new Error('Bestandsupload nog niet gekoppeld')
+                // FILE UPLOAD FLOW
+                const fakeFile = (source as any).file as File | undefined
+                if (!fakeFile) throw new Error('No file in source')
+
+                setUploadPct(0)
+
+                const up = await uploadLocal.upload({
+                owner: ownerId,
+                file: fakeFile,
+                onProgress: (pct) => setUploadPct(pct),
+                })
+                    mediaId = up.mediaId
               }
 
               // 3) link media → project
@@ -147,9 +161,14 @@ export default function Overview() {
               nav(`/dashboard/project/${project.id}`)
             } catch (e: any) {
               alert(e?.message || 'Failed to start')
+            }  finally{
+                      setUploadPct(null)
             }
           }}
-          onCancel={() => setSource(null)}
+          onCancel={() => {
+            if (uploadPct !== null) uploadLocal.cancel()
+            setSource(null)
+          }}
         />
       )}
     </div>
