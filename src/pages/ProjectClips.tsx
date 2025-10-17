@@ -1,10 +1,13 @@
-// src/pages/ProjectClips.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ClipCard, { Clip } from '../components/ClipCard'
 import ClipPreviewModal from '../components/ClipPreviewModal'
-import { useProjectClips } from '../api/hooks'
+import { useProjectClipsInfinite } from '../api/hooks'
+import LoadMore from '../components/LoadMore'
 import { SAMPLE_PROJECT_ID, sampleClips } from '../sample/sampleData'
+import { useUpdateClipStatus, useEnqueueRender } from '../api/hooks'
+import { useToast } from '../components/Toast'
+
 
 const ownerId =
     (localStorage.getItem('ownerId') as string) ||
@@ -20,6 +23,7 @@ const fmtSec = (s: number) => {
   const ss = Math.floor(s % 60)
   return `${m}:${String(ss).padStart(2, '0')}`
 }
+
 const mapToUIClip = (c: any): Clip & { _durationSec: number; _createdAt?: string } => {
   const durationMs =
       c.durationMs ??
@@ -30,7 +34,7 @@ const mapToUIClip = (c: any): Clip & { _durationSec: number; _createdAt?: string
   return {
     id: c.id,
     title: c.title || 'Untitled',
-    thumb: c.thumbUrl || '/src/assets/thumb2.jpg',
+    thumb: c.thumbUrl || '/thumb-fallback.jpg', // zet een fallback in /public
     duration: fmtSec(durationSec),
     score: c.score ?? 0,
     captions: c.captions ?? false,
@@ -52,8 +56,6 @@ export default function ProjectClips() {
   const [score, setScore] = useState<ScoreFilter>((sp.get('score') as ScoreFilter) ?? 'all')
   const [ccOnly, setCcOnly] = useState(sp.get('cc') === '1')
   const [sort, setSort] = useState<SortKey>((sp.get('sort') as SortKey) ?? 'scoreDesc')
-  const [page, setPage] = useState(0)
-  const size = 50
 
   // URL sync
   useEffect(() => {
@@ -64,15 +66,13 @@ export default function ProjectClips() {
     ccOnly ? next.set('cc', '1') : next.delete('cc')
     sort !== 'scoreDesc' ? next.set('sort', sort) : next.delete('sort')
     setSp(next, { replace: true })
-    setPage(0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, dur, score, ccOnly, sort])
 
-  // Server-side params (alleen voor echte projecten)
+  // Server-side params
   const minDurMs =
       dur === 'lt30' ? 0 : dur === '30to60' ? 30000 : dur === 'gt60' ? 61000 : undefined
-  const maxDurMs =
-      dur === 'lt30' ? 29000 : dur === '30to60' ? 60000 : undefined
+  const maxDurMs = dur === 'lt30' ? 29000 : dur === '30to60' ? 60000 : undefined
   const apiSort =
       sort === 'scoreDesc'
           ? 'score'
@@ -81,9 +81,10 @@ export default function ProjectClips() {
               : 'createdAt'
   const order = sort === 'shortAsc' ? 'asc' : 'desc'
 
-  // Data (sample → geen fetch; echt project → fetch)
-  const apiQuery = !isSample
-      ? useProjectClips({
+  // Infinite data (alleen bij echte projecten)
+  const size = 50
+  const inf = !isSample
+      ? useProjectClipsInfinite({
         projectId,
         ownerId,
         q,
@@ -91,27 +92,41 @@ export default function ProjectClips() {
         maxDurMs,
         sort: apiSort as any,
         order: order as any,
-        page,
         size,
       })
       : null
 
-  const data = apiQuery?.data
-  const isLoading = apiQuery?.isLoading ?? false
+  // Pages samenvoegen → UI model
+  const pages = inf?.data?.pages ?? []
+  const apiUiClips = useMemo(
+      () => pages.flatMap((p) => (p.content || [])).map(mapToUIClip),
+      [pages]
+  )
 
-  // Map → UI model
-  const apiUiClips = useMemo(() => (data?.content || []).map(mapToUIClip), [data])
+  // Kies bron: sample of api
   const uiClipsRaw = isSample ? sampleClips : apiUiClips
 
   // Client-side lichte filters (score/CC)
   const filtered = useMemo(() => {
     const sMin = score === 'all' ? 0 : score === '70' ? 70 : score === '80' ? 80 : 90
-    return uiClipsRaw.filter((c) => {
+    return (uiClipsRaw || []).filter((c) => {
       if (ccOnly && !c.captions) return false
       if (c.score < sMin) return false
       return true
     })
   }, [uiClipsRaw, ccOnly, score])
+
+  const isLoading = inf?.isLoading ?? false
+  const isFetchingNext = inf?.isFetchingNextPage ?? false
+  const hasNext = inf?.hasNextPage ?? false
+  const totalDisplay = isSample
+      ? filtered.length
+      : pages[0]?.totalElements ?? filtered.length // Spring Page heeft totalElements op page 0
+
+  const { success, error, info } = useToast()
+  const updateStatus = useUpdateClipStatus()
+  const enqueueRender = useEnqueueRender()
+
 
   // Selection + modal
   const [selectMode, setSelectMode] = useState(false)
@@ -150,14 +165,10 @@ export default function ProjectClips() {
     return () => window.removeEventListener('keydown', handler)
   }, [open, active, filtered, activeIdx, selectMode])
 
-  // Bulk stubs
+  // Bulk stubs (later toasts + echte API)
   const bulkApprove = () => alert(`Approve ${selected.size} clips`)
   const bulkReject = () => alert(`Reject ${selected.size} clips`)
   const bulkEdit = () => alert(`Edit ${selected.size} clips`)
-
-  // Meta / paginatie
-  const total = isSample ? filtered.length : data?.totalElements ?? filtered.length
-  const totalPages = isSample ? 1 : data?.totalPages ?? 1
 
   return (
       <div className="space-y-5">
@@ -168,7 +179,7 @@ export default function ProjectClips() {
             {isSample && <span className="badge">Sample</span>}
           </div>
           <div className="text-sm text-muted">
-            {isSample ? `${total} demo clips` : isLoading ? 'Loading…' : `${total} results`}
+            {isLoading ? 'Loading…' : `${totalDisplay} results`}
           </div>
         </div>
 
@@ -193,23 +204,43 @@ export default function ProjectClips() {
 
             {/* Duration chips */}
             <div className="flex items-center gap-2">
-              <Chip active={dur === 'all'} onClick={() => setDur('all')}>All dur.</Chip>
-              <Chip active={dur === 'lt30'} onClick={() => setDur('lt30')}>{'<'}30s</Chip>
-              <Chip active={dur === '30to60'} onClick={() => setDur('30to60')}>30–60s</Chip>
-              <Chip active={dur === 'gt60'} onClick={() => setDur('gt60')}>{'>'}60s</Chip>
+              <Chip active={dur === 'all'} onClick={() => setDur('all')}>
+                All dur.
+              </Chip>
+              <Chip active={dur === 'lt30'} onClick={() => setDur('lt30')}>
+                {'<'}30s
+              </Chip>
+              <Chip active={dur === '30to60'} onClick={() => setDur('30to60')}>
+                30–60s
+              </Chip>
+              <Chip active={dur === 'gt60'} onClick={() => setDur('gt60')}>
+                {'>'}60s
+              </Chip>
             </div>
 
             {/* Score chips */}
             <div className="flex items-center gap-2">
-              <Chip active={score === 'all'} onClick={() => setScore('all')}>All scores</Chip>
-              <Chip active={score === '70'} onClick={() => setScore('70')}>70+</Chip>
-              <Chip active={score === '80'} onClick={() => setScore('80')}>80+</Chip>
-              <Chip active={score === '90'} onClick={() => setScore('90')}>90+</Chip>
+              <Chip active={score === 'all'} onClick={() => setScore('all')}>
+                All scores
+              </Chip>
+              <Chip active={score === '70'} onClick={() => setScore('70')}>
+                70+
+              </Chip>
+              <Chip active={score === '80'} onClick={() => setScore('80')}>
+                80+
+              </Chip>
+              <Chip active={score === '90'} onClick={() => setScore('90')}>
+                90+
+              </Chip>
             </div>
 
             {/* CC toggle */}
             <label className="ml-auto flex items-center gap-2 text-sm cursor-pointer select-none">
-              <input type="checkbox" checked={ccOnly} onChange={() => setCcOnly((v) => !v)} />
+              <input
+                  type="checkbox"
+                  checked={ccOnly}
+                  onChange={() => setCcOnly((v) => !v)}
+              />
               Captions only
             </label>
 
@@ -244,10 +275,18 @@ export default function ProjectClips() {
             <div className="card p-3 flex items-center justify-between">
               <div className="text-sm">{selected.size} selected</div>
               <div className="flex items-center gap-2">
-                <button className="btn-ghost" onClick={bulkApprove}>Approve</button>
-                <button className="btn-ghost" onClick={bulkEdit}>Edit</button>
-                <button className="btn-ghost" onClick={bulkReject}>Reject</button>
-                <button className="btn-ghost" onClick={clearSel}>Clear</button>
+                <button className="btn-ghost" onClick={bulkApprove}>
+                  Approve
+                </button>
+                <button className="btn-ghost" onClick={bulkEdit}>
+                  Edit
+                </button>
+                <button className="btn-ghost" onClick={bulkReject}>
+                  Reject
+                </button>
+                <button className="btn-ghost" onClick={clearSel}>
+                  Clear
+                </button>
               </div>
             </div>
         )}
@@ -255,7 +294,9 @@ export default function ProjectClips() {
         {/* Grid */}
         <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
           {isLoading ? (
-              <div className="text-sm text-muted">Loading clips…</div>
+              Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-64 rounded-lg bg-white/5 animate-pulse" />
+              ))
           ) : (
               filtered.map((c, idx) => (
                   <ClipCard
@@ -263,7 +304,7 @@ export default function ProjectClips() {
                       clip={c}
                       selectable={!isSample && selectMode}
                       selected={selected.has(c.id)}
-                      onSelectToggle={isSample ? undefined : (id) => toggleSel(id)}
+                      onSelectToggle={isSample ? undefined : () => toggleSel(c.id)}
                       onClick={() => {
                         setActiveIdx(idx)
                         setOpen(true)
@@ -273,25 +314,12 @@ export default function ProjectClips() {
           )}
         </div>
 
-        {/* Pagination (geen voor sample) */}
-        {!isSample && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <button
-                  className="btn-ghost"
-                  disabled={page <= 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                Prev
-              </button>
-              <span className="text-muted">Page {page + 1} / {totalPages}</span>
-              <button
-                  className="btn-ghost"
-                  disabled={page + 1 >= totalPages}
-                  onClick={() => setPage((p) => Math.min((totalPages || 1) - 1, p + 1))}
-              >
-                Next
-              </button>
-            </div>
+        {/* Infinite loader (geen voor sample) */}
+        {!isSample && (
+            <LoadMore
+                disabled={isLoading || isFetchingNext || !hasNext}
+                onVisible={() => inf?.fetchNextPage()}
+            />
         )}
 
         {/* Modal */}
@@ -299,10 +327,37 @@ export default function ProjectClips() {
             open={open}
             clip={active ?? null}
             onClose={() => setOpen(false)}
-            onApprove={(c) => { alert('Approve ' + c.id); setOpen(false) }}
-            onReject={(c) => { alert('Reject ' + c.id); setOpen(false) }}
+            onApprove={(c) => {
+              if (isSample) { info('Demo — not available'); setOpen(false); return }
+              updateStatus.mutate(
+                  { id: c.id, status: 'APPROVED' },
+                  {
+                    onSuccess: () => { success('Clip approved'); setOpen(false) },
+                    onError: () => error('Failed to approve'),
+                  }
+              )
+            }}
+            onReject={(c) => {
+              if (isSample) { info('Demo — not available'); setOpen(false); return }
+              updateStatus.mutate(
+                  { id: c.id, status: 'REJECTED' },
+                  {
+                    onSuccess: () => { success('Clip rejected'); setOpen(false) },
+                    onError: () => error('Failed to reject'),
+                  }
+              )
+            }}
             onEdit={(c) => nav(`/dashboard/clip/${c.id}/edit`)}
+            // Optioneel: Render-knop in je modal-component toevoegen -> handler:
+            onRender={(c) => {
+              if (isSample) { info('Demo — not available'); return }
+              enqueueRender.mutate(c.id, {
+                onSuccess: () => success('Render enqueued'),
+                onError: () => error('Failed to enqueue render'),
+              })
+            }}
         />
+
       </div>
   )
 }
@@ -319,7 +374,9 @@ function Chip({
 }) {
   return (
       <button
-          className={`px-3 py-1 rounded-full text-sm border ${active ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'}`}
+          className={`px-3 py-1 rounded-full text-sm border ${
+              active ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'
+          }`}
           onClick={onClick}
       >
         {children}

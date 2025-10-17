@@ -6,7 +6,7 @@ import {
   Navigate,
 } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
+import { ToastProvider } from './components/Toast'
 import Root from './pages/Root'
 import Overview from './pages/Overview'
 import Library from './pages/Library'
@@ -15,7 +15,8 @@ import ProjectClips from './pages/ProjectClips'
 import MediaDetail from './pages/MediaDetail'
 import ClipEditor from './pages/ClipEditor'
 import BrandTemplate from './pages/BrandTemplate'
-import './styles.css'  
+import './styles.css'
+import MeSettings from "./pages/MeSettings";
 
 
 if (!localStorage.getItem('ownerId')) {
@@ -36,6 +37,8 @@ const router = createBrowserRouter([
       { path: '/dashboard/media/:id', element: <MediaDetail /> },
       { path: '/dashboard/clip/:id/edit', element: <ClipEditor /> },
       { path: '/dashboard/brand-template', element: <BrandTemplate /> },
+      { path: '/dashboard/me', element: <MeSettings /> },
+
     ],
   },
 ])
@@ -44,8 +47,10 @@ const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ToastProvider>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>
+    </ToastProvider>
   </StrictMode>,
 )

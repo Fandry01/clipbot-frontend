@@ -16,6 +16,10 @@ import {
 } from '../api/hooks'
 import ProjectCardSkeleton from "../components/ProjectCardSkeleton";
 import { useUploadLocal } from '../api/hooks'
+import { useToast } from '../components/Toast'
+import { useStartJob, useJob } from '../api/hooks'
+
+
 
 const ownerId =
   (localStorage.getItem('ownerId') as string) ||
@@ -37,8 +41,20 @@ export default function Overview() {
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
   const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
   const uploadLocal = useUploadLocal()
-  const [uploadPct, setUploadPct] = useState<number | null>(null) 
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
+  const { success, error, info } = useToast()
+  const startJob = useStartJob()
+  const [detectJobId, setDetectJobId] = useState<string | null>(null)
+  const detectJobQ = useJob(detectJobId || undefined)
+  // onder detectJobQ declaratie
+  if (detectJobQ?.data?.status === 'COMPLETE') {
+    success('Detect complete 🎯')
+  }
+  if (detectJobQ?.data?.status === 'FAILED') {
+    error('Detect failed')
+  }
 
+  const startDetectImmediately = true
   return (
     <div>
       {!source ? (
@@ -124,47 +140,55 @@ export default function Overview() {
               ? 'Creating project…'
               : undefined
           }
+          metadata={source?.type === 'url' ? metaQ.data : undefined}
+          metaLoading={source?.type === 'url' ? metaQ.isLoading : false}
+          metaError={source?.type === 'url' && metaQ.isError ? 'Failed to fetch metadata' : undefined}
+
           onStartJob={async (payload) => {
             try {
-              const title = metaQ.data?.title || (payload as any)?.title || 'New project'
+              const title =
+                  (payload?.title && String(payload.title).trim()) ||
+                  metaQ.data?.title || 'New project'
 
-              // 1) kies of maak project
               const project =
-                projects[0] ||
-                (await createProject.mutateAsync({ ownerId, title, templateId: null }))
+                  projects[0] ||
+                  (await createProject.mutateAsync({ ownerId, title, templateId: null }))
 
-              // 2) media registreren
               let mediaId: string
-
               if (source.type === 'url') {
                 const m = await createFromUrl.mutateAsync({ ownerId, url: source.value })
                 mediaId = m.mediaId
               } else {
-                // FILE UPLOAD FLOW
-                const fakeFile = (source as any).file as File | undefined
-                if (!fakeFile) throw new Error('No file in source')
+                const file = (source as any).file as File | undefined
+                if (!file) throw new Error('No file in source')
 
                 setUploadPct(0)
-
                 const up = await uploadLocal.upload({
-                owner: ownerId,
-                file: fakeFile,
-                onProgress: (pct) => setUploadPct(pct),
+                  owner: ownerId,
+                  file,
+                  onProgress: (pct) => setUploadPct(pct),
                 })
-                    mediaId = up.mediaId
+                mediaId = up.mediaId
               }
 
-              // 3) link media → project
               await linkMedia.mutateAsync({ projectId: project.id, ownerId, mediaId })
+              success('Media linked to project ✅')
 
-              // 4) navigeer naar project clips
+              // ➕ detectie starten (optioneel)
+              if (startDetectImmediately) {
+                info('Detecting segments & transcript…')
+                const job = await startJob.mutateAsync({ type: 'DETECT', mediaId })
+                setDetectJobId(job.id || (job as any).jobId) // afhankelijk van backend naam
+              }
+
               nav(`/dashboard/project/${project.id}`)
             } catch (e: any) {
-              alert(e?.message || 'Failed to start')
-            }  finally{
-                      setUploadPct(null)
+              error(e?.message || 'Failed to start')
+            } finally {
+              setUploadPct(null)
             }
           }}
+
           onCancel={() => {
             if (uploadPct !== null) uploadLocal.cancel()
             setSource(null)

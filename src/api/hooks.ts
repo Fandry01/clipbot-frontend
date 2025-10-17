@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { api, getErr } from './client'
 import type {
   Page, ProjectResponse, ProjectListItem, MediaResponse, MetadataResponse, ClipResponse,
@@ -127,8 +128,6 @@ export function useUploadLocal() {
 
 
 
-
-
 /** ====== TRANSCRIPTS ====== */
 export function useTranscriptByMedia(mediaId?: UUID, lang?: string, provider?: string) {
   return useQuery({
@@ -156,6 +155,34 @@ export function usePatchClip() {
     }
   })
 }
+/** ====== CLIPS: STATUS + RENDER ====== */
+export function useUpdateClipStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { id: UUID; status: 'APPROVED' | 'REJECTED' | 'READY' | 'FAILED' }) => {
+      await api.post(`/v1/clips/${p.id}/status/${p.status}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project-clips'] })
+    },
+  })
+}
+
+export function useEnqueueRender() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (clipId: UUID) => {
+      const { data } = await api.post(`/v1/clips/enqueue-render`, { clipId })
+      return data as { jobId: UUID }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project-clips'] })
+      qc.invalidateQueries({ queryKey: ['jobs'] })
+    },
+  })
+}
+
+
 
 /** ====== JOBS ====== */
 export function useStartJob() {
@@ -219,3 +246,60 @@ export function useAppliedTemplate(projectId: UUID, ownerId: UUID) {
     }
   })
 }
+
+export function useProjectClipsInfinite(args: {
+  projectId: string; ownerId: string;
+  q?: string; minDurMs?: number; maxDurMs?: number;
+  sort?: 'createdAt'|'score'|'duration'; order?: 'asc'|'desc';
+  size?: number;
+}) {
+  const { projectId, ownerId, size = 50, ...filters } = args
+  return useInfiniteQuery({
+    queryKey: ['project-clips-inf', projectId, ownerId, filters, size],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const { data } = await api.get(`/v1/projects/${projectId}/clips`, {
+        params: { ownerId, page: pageParam, size, ...filters }
+      })
+      return data as Page<ClipResponse>
+    },
+    getNextPageParam: (lastPage) => {
+      const { number, totalPages } = lastPage
+      return number + 1 < totalPages ? number + 1 : undefined
+    },
+  })
+}
+export type MeResponse = {
+  id: string; name: string; handle?: string; email: string; avatarUrl?: string;
+  plan: 'Free'|'Pro'; usage?: { creditsUsed: number; creditsTotal: number };
+  connections?: Array<{ provider: string; connected: boolean }>
+}
+
+export function useMe() {
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: async () => (await api.get<MeResponse>('/v1/me')).data,
+    staleTime: 30_000,
+  })
+}
+export function useUpdateMe() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: Partial<MeResponse>) => (await api.put('/v1/me', p)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }),
+  })
+}
+export function useMeUsage() {
+  return useQuery({
+    queryKey: ['me-usage'],
+    queryFn: async () => (await api.get('/v1/me/usage')).data as { creditsUsed:number; creditsTotal:number },
+    refetchInterval: 15_000,
+  })
+}
+export function useConnections() {
+  return useQuery({
+    queryKey: ['me-connections'],
+    queryFn: async () => (await api.get('/v1/me/connections')).data as Array<{provider:string;connected:boolean}>,
+  })
+}
+

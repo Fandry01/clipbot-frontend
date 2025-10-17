@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 
 const PRESETS_KEY = 'brandTemplate.presets'
 const STORAGE_KEY  = 'brandTemplate.v1'
@@ -6,6 +6,7 @@ const STORAGE_KEY  = 'brandTemplate.v1'
 type Preset = { id: string; name: string; tpl: any }
 
 type Source = { type: 'url' | 'file'; value: string; name?: string }
+
 type MetadataLite = {
   platform: string
   url: string
@@ -75,12 +76,13 @@ export default function IntakePanel({
             model, prompt, srtName, from, to, estimatedCredits: credits
         })
     }
-      
+
     const fmtDur = (sec?: number | null) => {
     if (!sec && sec !== 0) return undefined
     const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
     return `${m}:${String(s).padStart(2,'0')}`
   }
+    useEffect(() => { console.log('IntakePanel metadata', metadata) }, [metadata])
 
     return (
         <div className="max-w-4xl mx-auto space-y-4">
