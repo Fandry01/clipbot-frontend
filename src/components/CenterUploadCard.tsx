@@ -66,8 +66,16 @@ export default function CenterUploadCard({
               ref={fileRef}
               type="file"
               hidden
-              accept="video/*,audio/*"
-              onChange={(e) => handleFileChange(e.target.files?.[0] || undefined)}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (!f) return
+                onStart?.({
+                  type: 'file',
+                  value: URL.createObjectURL(f),
+                  name: f.name,
+                  file: f,                 // ✅ voeg het echte File object toe
+                })
+              }}
             />
 
             <button className="btn-ghost" onClick={() => alert('Coming soon')}>

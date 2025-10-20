@@ -6,6 +6,7 @@ import type {
   TranscriptResponse, JobResponse, TemplateResponse, AppliedTemplateResponse, UUID
 } from './types'
 import axios from 'axios'
+
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
   return useQuery({
@@ -48,6 +49,18 @@ export function useLinkMediaToProject() {
     }
   })
 }
+export function useProjectsBySubject(ownerExternalSubject: string, page=0, size=12) {
+  return useQuery({
+    queryKey: ['projects', 'bySubject', ownerExternalSubject, page, size],
+    queryFn: async () => {
+      const { data } = await api.get<Page<ProjectListItem>>(
+        `/v1/projects`,
+        { params: { ownerExternalSubject, page, size } }
+      )
+      return data
+    }
+  })
+}
 export function useProjectClips(args: {
   projectId: UUID; ownerId: UUID; status?: string; page?: number; size?: number;
   q?: string; minDurMs?: number; maxDurMs?: number; sort?: 'createdAt'|'score'|'duration'; order?: 'asc'|'desc'
@@ -63,6 +76,35 @@ export function useProjectClips(args: {
     }
   })
 }
+export function useCreateProjectBySubject() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { ownerExternalSubject: string; title: string; templateId?: UUID|null }) => {
+      const { data } = await api.post<ProjectResponse>(`/v1/projects`, p)
+      return data
+    },
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['projects', 'bySubject', vars.ownerExternalSubject] })
+  })
+}
+
+export function useLinkMediaToProjectBySubject() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { projectId: UUID; ownerExternalSubject: string; mediaId: UUID }) => {
+      // controller accepteert ownerExternalSubject in body
+      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, {
+        ownerExternalSubject: p.ownerExternalSubject,
+        mediaId: p.mediaId
+      })
+      return data
+    },
+    onSuccess: (_, p) => {
+      qc.invalidateQueries({ queryKey: ['project', p.projectId] })
+      qc.invalidateQueries({ queryKey: ['project-media', p.projectId] })
+    }
+  })
+}
+
 
 /** ====== MEDIA & METADATA ====== */
 export function useMedia(id: UUID) {
@@ -185,12 +227,23 @@ export function useEnqueueRender() {
 
 
 /** ====== JOBS ====== */
-export function useStartJob() {
+export function useEnqueueClipRender() {
   return useMutation({
     mutationFn: async (p: { type: 'DETECT'|'RENDER'; mediaId?: UUID; clipId?: UUID; params?: any }) => {
-      const { data } = await api.post<JobResponse>(`/v1/jobs`, p)
+      const { data } = await api.post<string>(`/v1/clips/enqueue-render`, p)
       return data
     }
+  })
+}
+export function useEnqueueDetect() {
+  return useMutation({
+    mutationFn: async (p: { mediaId: string; lang?: string; provider?: string; sceneThreshold?: number }) => {
+      const { data } = await api.post<{ jobId: string; mediaId: string; status: string }>(
+        `/api/media/${p.mediaId}/detect`,
+        { lang: p.lang, provider: p.provider, sceneThreshold: p.sceneThreshold }
+      )
+      return data
+    },
   })
 }
 export function useJob(jobId?: UUID) {
