@@ -1,5 +1,5 @@
 import { useMe, useUpdateMe, useMeUsage, useConnections } from '../api/hooks'
-import { useToast } from '../components/toast'
+import { useToast } from '../components/Toast'
 import { useState } from 'react'
 
 export default function MeSettings() {

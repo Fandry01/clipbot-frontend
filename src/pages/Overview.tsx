@@ -7,6 +7,7 @@ import { sampleProject } from '../sample/sampleData'
 import StorageChips from '../components/StorageChips'
 import ProjectCard from '../components/ProjectCard'
 import IntakePanel from '../components/IntakePanel'
+import FlowProgressOverlay from '../components/FlowProgressOverlay'
 import {
   useProjectsBySubject,
   useCreateProjectBySubject,
@@ -42,6 +43,14 @@ export default function Overview() {
   const isBusy = createProject.isPending || createFromUrl.isPending || linkMedia.isPending
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
   const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
+  const [flowOpen, setFlowOpen] = useState(false)
+  const [flowStep, setFlowStep] = useState<{ title: string; subtitle?: string; pct?: number } | null>(null)
+
+  const setStep = (title: string, subtitle?: string, pct?: number) => {
+    setFlowOpen(true)
+    setFlowStep({ title, subtitle, pct })
+  }
+
   const startDetectImmediately = true
 
   return (
@@ -125,6 +134,7 @@ export default function Overview() {
           metaError={source?.type === 'url' && metaQ.isError ? 'Failed to fetch metadata' : undefined}
           onStartJob={async (payload) => {
             try {
+              setStep('Creating project…', 'Initializing workspace')
               const title =
                 (payload?.title && String(payload.title).trim()) ||
                 metaQ.data?.title ||
@@ -142,6 +152,7 @@ export default function Overview() {
               // 2) media registreren
               let mediaId: string
               if (source.type === 'url') {
+                setStep('Registering media…', 'Saving external link')
                 const m = await createFromUrl.mutateAsync({
                   ownerId: project.ownerId,
                   url: source.value,
@@ -151,6 +162,7 @@ export default function Overview() {
                 const file = source.file // ✅ we gaan zo CenterUploadCard aanpassen
                 if (!file) throw new Error('No file in source')
                 setUploadPct(0)
+                setStep('Uploading…', file.name, 0)
                 const up = await uploadLocal.upload({
                   owner: project.ownerId,
                   file,
@@ -160,6 +172,7 @@ export default function Overview() {
               }
 
               // 3) media → project koppelen
+              setStep('Linking to project…', 'Associating media')
               await linkMedia.mutateAsync({
                 projectId: project.id,
                 ownerExternalSubject: externalSubject,
@@ -169,6 +182,7 @@ export default function Overview() {
 
               // 4) detectie optioneel starten (géén /v1/jobs)
               if (startDetectImmediately) {
+                setStep('Detecting & transcribing…', 'Running background jobs')
                 info('Detecting segments & transcript…')
                 try {
                   const res = await enqueueDetect.mutateAsync({
@@ -184,6 +198,7 @@ export default function Overview() {
               }
 
               // 5) navigeren
+              setStep('All set ✅', 'Opening your clips…', 100)
               nav(`/dashboard/project/${project.id}`)
             } catch (e: any) {
               error(e?.message || 'Failed to start')
@@ -196,7 +211,14 @@ export default function Overview() {
             setSource(null)
           }}
         />
+
       )}
+      <FlowProgressOverlay
+          open={flowOpen}
+          title={flowStep?.title || 'Working…'}
+          subtitle={flowStep?.subtitle}
+          percent={flowStep?.pct}
+      />
     </div>
   )
 }
