@@ -59,7 +59,7 @@ export default function ClipCard({
           alt={clip.title}
           className="w-full h-full object-cover"
           loading="lazy"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/src/assets/thumb-fallback.jpg' }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/src/assets/thumb1.jpg' }}
         />
         <div className="absolute top-2 right-2 text-xs flex gap-1">
           {clip.captions && <span className="badge">CC</span>}

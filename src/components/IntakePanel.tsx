@@ -27,7 +27,7 @@ export default function IntakePanel({
                                         metaError,
                                     
                                     }: {
-    source: Source
+    source: { type: 'url' | 'file'; value: string; name?: string; file?: File }
     onStartJob: (payload: any) => void | Promise<void>
     onCancel?: () => void
     /** disable alle inputs/acties tijdens mutations */

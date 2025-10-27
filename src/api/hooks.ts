@@ -6,6 +6,7 @@ import type {
   TranscriptResponse, JobResponse, TemplateResponse, AppliedTemplateResponse, UUID
 } from './types'
 import axios from 'axios'
+import { fileOutUrl } from '../api/file'
 
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
@@ -301,18 +302,18 @@ export function useAppliedTemplate(projectId: UUID, ownerId: UUID) {
 }
 
 export function useProjectClipsInfinite(args: {
-  projectId: string; ownerId: string;
+  projectId: string; ownerExternalSubject: string;
   q?: string; minDurMs?: number; maxDurMs?: number;
   sort?: 'createdAt'|'score'|'duration'; order?: 'asc'|'desc';
   size?: number;
 }) {
-  const { projectId, ownerId, size = 50, ...filters } = args
+  const { projectId, ownerExternalSubject, size = 50, ...filters } = args
   return useInfiniteQuery({
-    queryKey: ['project-clips-inf', projectId, ownerId, filters, size],
+    queryKey: ['project-clips-inf', projectId, ownerExternalSubject, filters, size],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const { data } = await api.get(`/v1/projects/${projectId}/clips`, {
-        params: { ownerId, page: pageParam, size, ...filters }
+        params: { ownerExternalSubject, page: pageParam, size, ...filters }
       })
       return data as Page<ClipResponse>
     },
@@ -354,5 +355,60 @@ export function useConnections() {
     queryKey: ['me-connections'],
     queryFn: async () => (await api.get('/v1/me/connections')).data as Array<{provider:string;connected:boolean}>,
   })
+}
+
+/*==== Player */
+type AssetLatestResp = {
+  id: string; kind: string; objectKey: string; size: number; createdAt: string;
+  relatedClipId?: string|null; relatedMediaId?: string|null
+}
+
+async function fetchLatestAssetForClip(clipId: string, kind: string) {
+  const { data } = await api.get<AssetLatestResp>(`/v1/assets/latest/clip/${clipId}`, {
+    params: { kind }
+  })
+  return data
+}
+
+export function useClipPlayback(clipId?: string) {
+  const enabled = !!clipId
+
+  const mp4 = useQuery({
+    queryKey: ['clip-asset', clipId, 'CLIP_MP4'],
+    enabled,
+    queryFn: () => fetchLatestAssetForClip(clipId!, 'CLIP_MP4'),
+    refetchInterval: (d) => (d ? false : 1500),
+    retry: (count, err: any) =>
+      count < 30 && err?.response?.status === 404, // 30x ~ 45s
+  })
+
+  const vtt = useQuery({
+    queryKey: ['clip-asset', clipId, 'SUB_VTT'],
+    enabled,
+    queryFn: () => fetchLatestAssetForClip(clipId!, 'SUB_VTT'),
+    retry: 1,
+  })
+
+  const thumb = useQuery({
+    queryKey: ['clip-asset', clipId, 'THUMBNAIL'],
+    enabled,
+    queryFn: () => fetchLatestAssetForClip(clipId!, 'THUMBNAIL'),
+    retry: 1,
+  })
+
+  const src        = mp4.data ? fileOutUrl(mp4.data.objectKey) : undefined
+  const download   = mp4.data ? fileOutUrl(mp4.data.objectKey, { dl: true }) : undefined
+  const vttUrl     = vtt.data ? fileOutUrl(vtt.data.objectKey) : undefined
+  const poster     = thumb.data ? fileOutUrl(thumb.data.objectKey) : undefined
+
+  return {
+    isReady: !!src,
+    loading: mp4.isLoading,
+    error: mp4.isError ? (mp4.error as any)?.message : undefined,
+    src,
+    vtt: vttUrl,
+    poster,
+    downloadUrl: download,
+  }
 }
 

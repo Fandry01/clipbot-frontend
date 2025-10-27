@@ -9,9 +9,8 @@ import { useUpdateClipStatus, useEnqueueRender } from '../api/hooks'
 import { useToast } from '../components/Toast'
 
 
-const ownerId =
-    (localStorage.getItem('ownerId') as string) ||
-    '00000000-0000-0000-0000-000000000001'
+const externalSubject =
+  localStorage.getItem('externalSubject') || 'demo-user-1'
 
 type DurFilter = 'all' | 'lt30' | '30to60' | 'gt60'
 type ScoreFilter = 'all' | '70' | '80' | '90'
@@ -86,7 +85,7 @@ export default function ProjectClips() {
   const inf = !isSample
       ? useProjectClipsInfinite({
         projectId,
-        ownerId,
+        ownerExternalSubject: externalSubject,
         q,
         minDurMs,
         maxDurMs,

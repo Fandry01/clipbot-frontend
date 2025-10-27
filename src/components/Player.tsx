@@ -9,24 +9,29 @@ export type PlayerHandle = {
 }
 
 type Props = {
-  src?: string
+  src?: string                 // MP4 of HLS (.m3u8)
   poster?: string
   aspect?: '16:9' | '9:16' | '1:1'
-  onTime?: (t: number) => void   // ✅ meld currentTime terug
+  captionsVttUrl?: string      // optioneel VTT
+  captionsLabel?: string       // bv. "EN"
+  downloadName?: string        // bestandsnaam bij download (bv. "clip.mp4")
+  resolveDownloadUrl?: () => Promise<string> | string
+  onTime?: (t: number) => void
 }
 
 const Player = forwardRef<PlayerHandle, Props>(function Player(
-  { src, poster, aspect = '16:9', onTime },
+  { src, poster, aspect = '16:9', captionsVttUrl, captionsLabel = 'CC', downloadName = 'clip.mp4', resolveDownloadUrl, onTime },
   ref
 ) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [speed, setSpeed] = useState(1)
+  const [downloading, setDownloading] = useState(false)
+  const [dlErr, setDlErr] = useState<string | null>(null)
 
-  // ✅ expose controls via ref
+  // Expose controls
   useImperativeHandle(ref, () => ({
     seek: (t: number) => {
-      if (!videoRef.current) return
-      const v = videoRef.current
+      const v = videoRef.current; if (!v) return
       const safe = Math.max(0, Math.min(t, Number.isFinite(v.duration) ? v.duration : t))
       v.currentTime = safe
     },
@@ -34,42 +39,88 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
     pause: () => videoRef.current?.pause(),
     getCurrentTime: () => videoRef.current?.currentTime ?? 0,
     setPlaybackRate: (r: number) => {
-      if (!videoRef.current) return
-      videoRef.current.playbackRate = r
-      setSpeed(r)
+      const v = videoRef.current; if (!v) return
+      v.playbackRate = r; setSpeed(r)
     },
   }), [])
 
-  // keyboard: J/K/L (seek -5 / toggle / +5)
+  // Keyboard J/K/L
   useEffect(() => {
-    const el = videoRef.current
-    if (!el) return
+    const v = videoRef.current; if (!v) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'k') el.paused ? el.play() : el.pause()
-      if (e.key.toLowerCase() === 'j') el.currentTime = Math.max(el.currentTime - 5, 0)
-      if (e.key.toLowerCase() === 'l') el.currentTime = Math.min(el.currentTime + 5, el.duration || 1e6)
+      const k = e.key.toLowerCase()
+      if (k === 'k') v.paused ? v.play() : v.pause()
+      if (k === 'j') v.currentTime = Math.max(v.currentTime - 5, 0)
+      if (k === 'l') v.currentTime = Math.min(v.currentTime + 5, v.duration || 1e6)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // ✅ tijd doorgeven aan parent
+  // onTime callback
   useEffect(() => {
     const v = videoRef.current
     if (!v || !onTime) return
-    const handler = () => onTime(v.currentTime || 0)
-    v.addEventListener('timeupdate', handler)
-    // bij initialisatie een eerste ping (optioneel)
+    const tick = () => onTime(v.currentTime || 0)
     const meta = () => onTime(v.currentTime || 0)
+    v.addEventListener('timeupdate', tick)
     v.addEventListener('loadedmetadata', meta)
-    return () => {
-      v.removeEventListener('timeupdate', handler)
-      v.removeEventListener('loadedmetadata', meta)
-    }
+    return () => { v.removeEventListener('timeupdate', tick); v.removeEventListener('loadedmetadata', meta) }
   }, [onTime, src])
+
+  // HLS (.m3u8) support via hls.js (lazy)
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !src) return
+    if (!src.endsWith('.m3u8')) { v.src = src; return }
+
+    const canNative = v.canPlayType('application/vnd.apple.mpegURL') // Safari/IOS
+    if (canNative) { v.src = src; return }
+
+    let hls: any
+    let aborted = false
+    ;(async () => {
+      try {
+        const mod = await import('hls.js') // npm i hls.js
+        if (aborted) return
+        const Hls = mod.default
+        if (Hls.isSupported()) {
+          hls = new Hls({ enableWorker: true })
+          hls.loadSource(src)
+          hls.attachMedia(v)
+        } else {
+          // fallback: laat browser het proberen
+          v.src = src
+        }
+      } catch {
+        v.src = src
+      }
+    })()
+    return () => { aborted = true; if (hls) { try { hls.destroy() } catch {} } }
+  }, [src])
 
   const aspectClass =
     aspect === '9:16' ? 'aspect-[9/16]' : aspect === '1:1' ? 'aspect-square' : 'aspect-video'
+
+  // Download handler
+  const onDownload = async () => {
+    if (!resolveDownloadUrl) return
+    setDlErr(null); setDownloading(true)
+    try {
+      const url = await resolveDownloadUrl()
+      // als het een directe link is → gewoon navigeren (respecteert CORS/headers)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = downloadName
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (e: any) {
+      setDlErr(e?.message || 'Download mislukt')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="space-y-2">
@@ -77,16 +128,27 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
         <video
           ref={videoRef}
           poster={poster}
-          src={src}
           controls
           className="w-full h-full object-cover"
           playsInline
-        />
+        >
+          {captionsVttUrl && (
+            <track
+              kind="subtitles"
+              src={captionsVttUrl}
+              srcLang="en"
+              label={captionsLabel}
+              default
+            />
+          )}
+        </video>
       </div>
+
       <div className="flex items-center gap-2 text-sm">
         <span className="badge">J −5s</span>
         <span className="badge">K Play/Pause</span>
         <span className="badge">L +5s</span>
+
         <select
           className="ml-auto bg-transparent border border-border rounded-lg px-2 py-1"
           value={speed}
@@ -97,12 +159,23 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
           }}
         >
           {[0.5, 1, 1.25, 1.5, 2].map((s) => (
-            <option key={s} value={s}>
-              {s}×
-            </option>
+            <option key={s} value={s}>{s}×</option>
           ))}
         </select>
+
+        {resolveDownloadUrl && (
+          <button
+            className="btn-secondary"
+            onClick={onDownload}
+            disabled={downloading}
+            title={downloadName}
+          >
+            {downloading ? 'Downloading…' : 'Download'}
+          </button>
+        )}
       </div>
+
+      {dlErr && <div className="text-xs text-red-400">{dlErr}</div>}
     </div>
   )
 })
