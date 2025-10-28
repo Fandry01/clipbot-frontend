@@ -2,7 +2,10 @@ import { api } from './client'
 
 const BASE = (api.defaults.baseURL || '').replace(/\/$/, '')
 
-export const fileOutUrl = (objectKey: string, opts?: { dl?: boolean }) => {
-  const q = opts?.dl ? '?dl=1' : ''
-  return `${BASE}/v1/files/out/${encodeURI(objectKey)}${q}`
+export function fileOutUrl(objectKey: string) {
+  // objectKey bevat al paden (niet volledig encoden)
+  return `${BASE}/v1/files/out/${objectKey}`
+}
+export function fileOutDownloadUrl(objectKey: string) {
+  return `${fileOutUrl(objectKey)}?download=1`
 }

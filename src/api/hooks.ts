@@ -7,6 +7,7 @@ import type {
 } from './types'
 import axios from 'axios'
 import { fileOutUrl } from '../api/file'
+import {useEffect, useRef, useState} from "react";
 
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
@@ -358,57 +359,84 @@ export function useConnections() {
 }
 
 /*==== Player */
-type AssetLatestResp = {
-  id: string; kind: string; objectKey: string; size: number; createdAt: string;
-  relatedClipId?: string|null; relatedMediaId?: string|null
+export type AssetResponse = {
+  id: string
+  kind: 'CLIP_MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT' | string
+  objectKey: string
+  size: number
+  createdAt: string
+  relatedClipId?: string | null
+  relatedMediaId?: string | null
 }
 
-async function fetchLatestAssetForClip(clipId: string, kind: string) {
-  const { data } = await api.get<AssetLatestResp>(`/v1/assets/latest/clip/${clipId}`, {
-    params: { kind }
+export function useLatestClipAsset(clipId?: string, kind: string = 'CLIP_MP4') {
+  return useQuery({
+    enabled: !!clipId,
+    queryKey: ['latest-asset', clipId, kind],
+    queryFn: async () => {
+      const { data } = await api.get<AssetResponse>(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
+      return data
+    }
   })
-  return data
 }
 
-export function useClipPlayback(clipId?: string) {
-  const enabled = !!clipId
+export function useOnScreen<T extends HTMLElement>(rootMargin = '0px') {
+  const ref = useRef<T | null>(null)
+  const [inView, setInView] = useState(false)
 
-  const mp4 = useQuery({
-    queryKey: ['clip-asset', clipId, 'CLIP_MP4'],
-    enabled,
-    queryFn: () => fetchLatestAssetForClip(clipId!, 'CLIP_MP4'),
-    refetchInterval: (d) => (d ? false : 1500),
-    retry: (count, err: any) =>
-      count < 30 && err?.response?.status === 404, // 30x ~ 45s
-  })
+  useEffect(() => {
+    if (!ref.current) return
+    const el = ref.current
+    const obs = new IntersectionObserver(
+        ([entry]) => setInView(entry.isIntersecting),
+        { root: null, rootMargin, threshold: 0.01 }
+    )
+    obs.observe(el)
+    return () => obs.unobserve(el)
+  }, [rootMargin])
 
-  const vtt = useQuery({
-    queryKey: ['clip-asset', clipId, 'SUB_VTT'],
-    enabled,
-    queryFn: () => fetchLatestAssetForClip(clipId!, 'SUB_VTT'),
-    retry: 1,
-  })
-
-  const thumb = useQuery({
-    queryKey: ['clip-asset', clipId, 'THUMBNAIL'],
-    enabled,
-    queryFn: () => fetchLatestAssetForClip(clipId!, 'THUMBNAIL'),
-    retry: 1,
-  })
-
-  const src        = mp4.data ? fileOutUrl(mp4.data.objectKey) : undefined
-  const download   = mp4.data ? fileOutUrl(mp4.data.objectKey, { dl: true }) : undefined
-  const vttUrl     = vtt.data ? fileOutUrl(vtt.data.objectKey) : undefined
-  const poster     = thumb.data ? fileOutUrl(thumb.data.objectKey) : undefined
-
-  return {
-    isReady: !!src,
-    loading: mp4.isLoading,
-    error: mp4.isError ? (mp4.error as any)?.message : undefined,
-    src,
-    vtt: vttUrl,
-    poster,
-    downloadUrl: download,
-  }
+  return { ref, inView }
 }
+
+// export function useClipPlayback(clipId?: string) {
+//   const enabled = !!clipId
+//
+//   const mp4 = useQuery({
+//     queryKey: ['clip-asset', clipId, 'CLIP_MP4'],
+//     enabled,
+//     queryFn: () => fetchLatestAssetForClip(clipId!, 'CLIP_MP4'),
+//     refetchInterval: (d) => (d ? false : 1500),
+//     retry: (count, err: any) =>
+//       count < 30 && err?.response?.status === 404, // 30x ~ 45s
+//   })
+//
+//   const vtt = useQuery({
+//     queryKey: ['clip-asset', clipId, 'SUB_VTT'],
+//     enabled,
+//     queryFn: () => fetchLatestAssetForClip(clipId!, 'SUB_VTT'),
+//     retry: 1,
+//   })
+//
+//   const thumb = useQuery({
+//     queryKey: ['clip-asset', clipId, 'THUMBNAIL'],
+//     enabled,
+//     queryFn: () => fetchLatestAssetForClip(clipId!, 'THUMBNAIL'),
+//     retry: 1,
+//   })
+//
+//   const src        = mp4.data ? fileOutUrl(mp4.data.objectKey) : undefined
+//   const download   = mp4.data ? fileOutUrl(mp4.data.objectKey, { dl: true }) : undefined
+//   const vttUrl     = vtt.data ? fileOutUrl(vtt.data.objectKey) : undefined
+//   const poster     = thumb.data ? fileOutUrl(thumb.data.objectKey) : undefined
+//
+//   return {
+//     isReady: !!src,
+//     loading: mp4.isLoading,
+//     error: mp4.isError ? (mp4.error as any)?.message : undefined,
+//     src,
+//     vtt: vttUrl,
+//     poster,
+//     downloadUrl: download,
+//   }
+// }
 

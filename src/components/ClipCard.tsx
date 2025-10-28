@@ -1,7 +1,11 @@
+import {fileOutUrl} from "../api/file";
+import {useMemo} from "react";
+import {useLatestClipAsset, useOnScreen} from "../api/hooks";
+
 export type Clip = {
   id: string
   title: string
-  thumb: string
+  thumb?: string
   duration: string // "MM:SS"
   score: number    // 0..100
   captions?: boolean
@@ -29,6 +33,13 @@ export default function ClipCard({
   onEdit,
   onReject,
 }: Props) {
+  const { ref, inView } = useOnScreen<HTMLDivElement>('200px')
+  const thumbQ = useLatestClipAsset(inView ? clip.id : undefined, 'THUMBNAIL')
+  const resolvedThumb = useMemo(() => {
+    if (thumbQ.data?.objectKey) return fileOutUrl(thumbQ.data.objectKey)
+    return clip.thumb || '/thumb-fallback.jpg'
+  }, [thumbQ.data, clip.thumb])
+
   const scoreColor =
     clip.score >= 90 ? 'text-emerald-400' :
     clip.score >= 80 ? 'text-green-400' :
@@ -55,7 +66,7 @@ export default function ClipCard({
     >
       <div className="relative w-full h-64 bg-white/5">
         <img
-          src={clip.thumb}
+          src={resolvedThumb}
           alt={clip.title}
           className="w-full h-full object-cover"
           loading="lazy"

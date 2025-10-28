@@ -1,6 +1,9 @@
 import { X } from 'lucide-react'
 import type { Clip } from './ClipCard'
 import { useEffect } from 'react'
+import Player from './Player'
+import { fileOutUrl } from '../api/file'
+import { useLatestClipAsset } from '../api/hooks'
 
 type Props = {
     open: boolean
@@ -22,6 +25,13 @@ export default function ClipPreviewModal({
                                              onRender = () => {}, // default noop
                                          }: Props) {
     if (!open || !clip) return null
+    const mp4Q  = useLatestClipAsset(clip?.id, 'CLIP_MP4')
+    const vttQ  = useLatestClipAsset(clip?.id, 'SUB_VTT')
+    const thumbQ = useLatestClipAsset(clip?.id, 'THUMBNAIL')
+
+    const mp4Url   = mp4Q.data ? fileOutUrl(mp4Q.data.objectKey) : undefined
+    const vttUrl   = vttQ.data ? fileOutUrl(vttQ.data.objectKey) : undefined
+    const poster   = thumbQ.data ? fileOutUrl(thumbQ.data.objectKey) : clip.thumb
 
     // Escape to close
     useEffect(() => {
@@ -29,6 +39,8 @@ export default function ClipPreviewModal({
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
     }, [onClose])
+
+
 
     return (
         <div
@@ -54,7 +66,14 @@ export default function ClipPreviewModal({
                 {/* media preview (placeholder) */}
                 <div className="relative bg-white/5 aspect-video">
                     {/* vervang later door: <video src=... controls /> */}
-                    <img src={clip.thumb} alt={clip.title} className="w-full h-full object-cover opacity-90" />
+                    <Player
+                        src={mp4Url}                 // of .m3u8 als jij HLS serveert
+                        poster={poster}
+                        captionsVttUrl={vttUrl}
+                        captionsLabel="EN"
+                        downloadName={`${(clip.title || 'clip').replace(/[^\w\-\. ]+/g,'')}-${clip.id}.mp4`}
+                        resolveDownloadUrl={() => mp4Url || ''} // eenvoudige download; evt. blob-route later
+                    />
                 </div>
 
                 <div className="p-4 space-y-3">
@@ -68,7 +87,7 @@ export default function ClipPreviewModal({
                                 High hook density at start; clear semantic boundary; minimal word-cut risk; strong sentiment shift.
                             </p>
                         </div>
-                        <div className="card p-3">
+                        <div className="card p-3">a
                             <div className="text-sm font-medium mb-1">Transcript (snippet)</div>
                             <p className="text-sm text-muted line-clamp-4">
                                 “…and then we decided to go all-in on the ice cream truck. The first day we sold out in an hour…”
