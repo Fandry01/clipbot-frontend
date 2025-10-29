@@ -9,6 +9,8 @@ import axios from 'axios'
 import { fileOutUrl } from '../api/file'
 import {useEffect, useRef, useState} from "react";
 
+export type AssetKind = 'CLIP_MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT'
+
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
   return useQuery({
@@ -361,7 +363,7 @@ export function useConnections() {
 /*==== Player */
 export type AssetResponse = {
   id: string
-  kind: 'CLIP_MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT' | string
+  kind: AssetKind | string
   objectKey: string
   size: number
   createdAt: string
@@ -369,16 +371,23 @@ export type AssetResponse = {
   relatedMediaId?: string | null
 }
 
-export function useLatestClipAsset(clipId?: string, kind: string = 'CLIP_MP4') {
+export function useLatestClipAsset(clipId?: string, kind?: AssetKind) {
   return useQuery({
-    enabled: !!clipId,
-    queryKey: ['latest-asset', clipId, kind],
+    enabled: !!clipId && !!kind,
+    queryKey: ['asset-latest', clipId, kind],
     queryFn: async () => {
-      const { data } = await api.get<AssetResponse>(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
-      return data
-    }
+      try {
+        const { data } = await api.get(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
+        return data as AssetResponse
+      } catch (e: any) {
+        if (e?.response?.status === 404) return null // geen asset (nog)
+        throw e
+      }
+    },
+    retry: false,
   })
 }
+
 
 export function useOnScreen<T extends HTMLElement>(rootMargin = '0px') {
   const ref = useRef<T | null>(null)

@@ -35,9 +35,10 @@ export default function ClipCard({
 }: Props) {
   const { ref, inView } = useOnScreen<HTMLDivElement>('200px')
   const thumbQ = useLatestClipAsset(inView ? clip.id : undefined, 'THUMBNAIL')
+
   const resolvedThumb = useMemo(() => {
     if (thumbQ.data?.objectKey) return fileOutUrl(thumbQ.data.objectKey)
-    return clip.thumb || '/thumb-fallback.jpg'
+    return clip.thumb || '/thumb1.jpg'
   }, [thumbQ.data, clip.thumb])
 
   const scoreColor =
@@ -47,6 +48,7 @@ export default function ClipCard({
 
   return (
     <div
+      ref={ref}
       className="group relative card overflow-hidden cursor-pointer"
       role="button"
       tabIndex={0}

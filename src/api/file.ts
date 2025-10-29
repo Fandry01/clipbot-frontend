@@ -1,11 +1,16 @@
+// api/file.ts
 import { api } from './client'
 
-const BASE = (api.defaults.baseURL || '').replace(/\/$/, '')
 
-export function fileOutUrl(objectKey: string) {
-  // objectKey bevat al paden (niet volledig encoden)
-  return `${BASE}/v1/files/out/${objectKey}`
+
+export function fileOutUrl(objectKey?: string) {
+  if (!objectKey || !objectKey.trim()) return ''
+  // encode alleen gevaarlijke chars, behoud slashes
+  const safe = objectKey.split('/').map(encodeURIComponent).join('/')
+  return `/v1/files/out/${safe}`
 }
-export function fileOutDownloadUrl(objectKey: string) {
-  return `${fileOutUrl(objectKey)}?download=1`
+export function fileOutDownloadUrl(objectKey?: string) {
+  const u = fileOutUrl(objectKey)
+  return u ? `${u}?download=1` : ''
 }
+
