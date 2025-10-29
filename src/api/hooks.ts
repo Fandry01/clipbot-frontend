@@ -241,7 +241,7 @@ export function useEnqueueDetect() {
   return useMutation({
     mutationFn: async (p: { mediaId: string; lang?: string; provider?: string; sceneThreshold?: number }) => {
       const { data } = await api.post<{ jobId: string; mediaId: string; status: string }>(
-        `/api/media/${p.mediaId}/detect`,
+        `/v1/media/${p.mediaId}/detect`,
         { lang: p.lang, provider: p.provider, sceneThreshold: p.sceneThreshold }
       )
       return data

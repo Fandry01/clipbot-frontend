@@ -33,7 +33,7 @@ const mapToUIClip = (c: any): Clip & { _durationSec: number; _createdAt?: string
   return {
     id: c.id,
     title: c.title || 'Untitled',
-    thumb: c.thumbUrl || '/thumb-fallback.jpg', // zet een fallback in /public
+    thumb: c.thumbUrl || '../assets/thumb1.jpg', // zet een fallback in /public
     duration: fmtSec(durationSec),
     score: c.score ?? 0,
     captions: c.captions ?? false,
