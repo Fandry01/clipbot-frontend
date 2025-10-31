@@ -10,6 +10,7 @@ import { fileOutUrl } from '../api/file'
 import {useEffect, useRef, useState} from "react";
 
 /** ====== PROJECTS ====== */
+
 export function useProjects(ownerId: UUID, page=0, size=12) {
   return useQuery({
     queryKey: ['projects', ownerId, page, size],
@@ -51,6 +52,7 @@ export function useLinkMediaToProject() {
     }
   })
 }
+
 export function useProjectsBySubject(ownerExternalSubject: string, page=0, size=12) {
   return useQuery({
     queryKey: ['projects', 'bySubject', ownerExternalSubject, page, size],
@@ -64,15 +66,15 @@ export function useProjectsBySubject(ownerExternalSubject: string, page=0, size=
   })
 }
 export function useProjectClips(args: {
-  projectId: UUID; ownerId: UUID; status?: string; page?: number; size?: number;
+  projectId: UUID; ownerExternalSubject: string; status?: string; page?: number; size?: number;
   q?: string; minDurMs?: number; maxDurMs?: number; sort?: 'createdAt'|'score'|'duration'; order?: 'asc'|'desc'
 }) {
-  const { projectId, ownerId, page=0, size=24, ...filters } = args
+  const { projectId, ownerExternalSubject, page=0, size=24, ...filters } = args
   return useQuery({
-    queryKey: ['project-clips', projectId, ownerId, page, size, filters],
+    queryKey: ['project-clips', projectId, ownerExternalSubject, page, size, filters],
     queryFn: async () => {
       const { data } = await api.get<Page<ClipResponse>>(`/v1/projects/${projectId}/clips`, {
-        params: { ownerId, page, size, ...filters }
+        params: { ownerExternalSubject, page, size, ...filters }
       })
       return data
     }
@@ -89,16 +91,41 @@ export function useCreateProjectBySubject() {
   })
 }
 
-export function useLinkMediaToProjectBySubject() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (p: { projectId: UUID; ownerExternalSubject: string; mediaId: UUID }) => {
-      // controller accepteert ownerExternalSubject in body
-      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, {
-        ownerExternalSubject: p.ownerExternalSubject,
-        mediaId: p.mediaId
+export function useProjectBySubject(projectId: UUID, ownerExternalSubject: string) {
+  return useQuery({
+    queryKey: ['project', projectId, ownerExternalSubject],
+    queryFn: async () => {
+      const { data } = await api.get<ProjectResponse>(`/v1/projects/${projectId}`, {
+        params: { ownerExternalSubject }
       })
       return data
+    }
+  })
+}
+
+// export function useLinkMediaToProjectBySubject() {
+//   const qc = useQueryClient()
+//   return useMutation({
+//     mutationFn: async (p: { projectId: UUID; ownerExternalSubject: string; mediaId: UUID }) => {
+//       // controller accepteert ownerExternalSubject in body
+//       const { data } = await api.post(`/v1/projects/${p.projectId}/media`, {
+//         ownerExternalSubject: p.ownerExternalSubject,
+//         mediaId: p.mediaId
+//       })
+//       return data
+//     },
+//     onSuccess: (_, p) => {
+//       qc.invalidateQueries({ queryKey: ['project', p.projectId] })
+//       qc.invalidateQueries({ queryKey: ['project-media', p.projectId] })
+//     }
+//   })
+// }
+
+export function useLinkMediaToProjectStrict() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (p: { projectId: UUID; mediaId: UUID }) => {
+      await api.post(`/v1/projects/${p.projectId}/media`, { mediaId: p.mediaId })
     },
     onSuccess: (_, p) => {
       qc.invalidateQueries({ queryKey: ['project', p.projectId] })
@@ -130,10 +157,22 @@ export function useMetadata(url?: string) {
   })
 }
 
+// export function useCreateMediaFromUrl() {
+//   return useMutation({
+//     mutationFn: async (p: { ownerId: UUID; url: string; source?: string }) => {
+//       const { data } = await api.post(`/v1/media/from-url`, p)
+//       return data as { mediaId: UUID; status: string; platform: string; durationMs?: number|null; thumbnail?: string|null; normalizedUrl?: string|null }
+//     }
+//   })
+// }
 export function useCreateMediaFromUrl() {
   return useMutation({
-    mutationFn: async (p: { ownerId: UUID; url: string; source?: string }) => {
-      const { data } = await api.post(`/v1/media/from-url`, p)
+    mutationFn: async (p: { ownerExternalSubject: string; url: string; source?: string }) => {
+      const { data } = await api.post(`/v1/media/from-url`, {
+        ownerExternalSubject: p.ownerExternalSubject,
+        url: p.url,
+        source: p.source ?? 'url',
+      })
       return data as { mediaId: UUID; status: string; platform: string; durationMs?: number|null; thumbnail?: string|null; normalizedUrl?: string|null }
     }
   })
@@ -371,12 +410,18 @@ export type AssetResponse = {
 
 export function useLatestClipAsset(clipId?: string, kind: string = 'CLIP_MP4') {
   return useQuery({
-    enabled: !!clipId,
+    enabled: !!clipId && !!kind,
     queryKey: ['latest-asset', clipId, kind],
     queryFn: async () => {
-      const { data } = await api.get<AssetResponse>(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
-      return data
-    }
+      try {
+        const { data } = await api.get<AssetResponse>(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
+        return data
+      } catch (e:any){
+        if(e?.response?.status === 404) return null
+        throw e
+      }
+    },
+    retry: false,
   })
 }
 

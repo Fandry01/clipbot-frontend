@@ -10,12 +10,10 @@ import IntakePanel from '../components/IntakePanel'
 import FlowProgressOverlay from '../components/FlowProgressOverlay'
 import {
   useProjectsBySubject,
-  useCreateProjectBySubject,
   useCreateMediaFromUrl,
-  useLinkMediaToProjectBySubject,
   useMetadata,
   useUploadLocal,
-  useEnqueueDetect,         // ✅ gebruik deze
+  useEnqueueDetect, useLinkMediaToProjectStrict, useCreateProjectBySubject,         // ✅ gebruik deze
   // useEnqueueClipRender,   // ← laat staan als je ‘m elders nodig hebt
 } from '../api/hooks'
 import ProjectCardSkeleton from '../components/ProjectCardSkeleton'
@@ -35,9 +33,9 @@ export default function Overview() {
   const projectsQ = useProjectsBySubject(externalSubject, 0, 12)
   const createProject = useCreateProjectBySubject()
   const createFromUrl = useCreateMediaFromUrl()
-  const linkMedia = useLinkMediaToProjectBySubject()
+  const linkMedia = useLinkMediaToProjectStrict()
   const uploadLocal = useUploadLocal()
-  const enqueueDetect = useEnqueueDetect()      // ✅
+  const enqueueDetect = useEnqueueDetect()     // ✅
 
   const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
   const isBusy = createProject.isPending || createFromUrl.isPending || linkMedia.isPending
@@ -154,7 +152,7 @@ export default function Overview() {
               if (source.type === 'url') {
                 setStep('Registering media…', 'Saving external link')
                 const m = await createFromUrl.mutateAsync({
-                  ownerId: project.ownerId,
+                  ownerExternalSubject: project.ownerExternalSubject,
                   url: source.value,
                 })
                 mediaId = m.mediaId
@@ -164,7 +162,7 @@ export default function Overview() {
                 setUploadPct(0)
                 setStep('Uploading…', file.name, 0)
                 const up = await uploadLocal.upload({
-                  owner: project.ownerId,
+                  owner: project.ownerExternalSubject,
                   file,
                   onProgress: (pct) => setUploadPct(pct),
                 })
@@ -175,7 +173,6 @@ export default function Overview() {
               setStep('Linking to project…', 'Associating media')
               await linkMedia.mutateAsync({
                 projectId: project.id,
-                ownerExternalSubject: externalSubject,
                 mediaId,
               })
               success('Media linked to project ✅')

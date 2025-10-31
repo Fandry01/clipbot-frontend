@@ -11,6 +11,7 @@ export type Page<T> = {
 export type ProjectResponse = {
   id: UUID
   ownerId: UUID
+  ownerExternalSubject: string
   title: string
   createdAt: string
   templateId: UUID | null
