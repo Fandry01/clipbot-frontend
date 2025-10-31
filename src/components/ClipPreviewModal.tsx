@@ -33,7 +33,7 @@ export default function ClipPreviewModal({
 
     const mp4Url = mp4Q.data?.objectKey ? fileOutUrl(mp4Q.data.objectKey) : undefined
     const vttUrl = vttQ.data?.objectKey ? fileOutUrl(vttQ.data.objectKey) : undefined
-    const poster = thumbQ.data?.objectKey ? fileOutUrl(thumbQ.data.objectKey) : (clip.thumb || '/thumb-fallback.jpg')
+    const poster = thumbQ.data?.objectKey ? fileOutUrl(thumbQ.data.objectKey) : (clip.thumb || '/thumb1.jpg')
 
     const downloadingName = useMemo(() => {
         const cleanTitle = (clip.title || 'clip').replace(/[^\w\-\. ]+/g, '').trim() || 'clip'
