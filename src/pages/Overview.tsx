@@ -12,11 +12,10 @@ import {
   useProjectsBySubject,
   useCreateProjectBySubject,
   useCreateMediaFromUrl,
-  useLinkMediaToProjectBySubject,
+  useLinkMediaToProject,   // ⬅︎ deze
   useMetadata,
   useUploadLocal,
-  useEnqueueDetect,         // ✅ gebruik deze
-  // useEnqueueClipRender,   // ← laat staan als je ‘m elders nodig hebt
+  useEnqueueDetect,
 } from '../api/hooks'
 import ProjectCardSkeleton from '../components/ProjectCardSkeleton'
 import { useToast } from '../components/Toast'
@@ -35,7 +34,7 @@ export default function Overview() {
   const projectsQ = useProjectsBySubject(externalSubject, 0, 12)
   const createProject = useCreateProjectBySubject()
   const createFromUrl = useCreateMediaFromUrl()
-  const linkMedia = useLinkMediaToProjectBySubject()
+  const linkMedia = useLinkMediaToProject()
   const uploadLocal = useUploadLocal()
   const enqueueDetect = useEnqueueDetect()      // ✅
 
@@ -164,7 +163,7 @@ export default function Overview() {
                 setUploadPct(0)
                 setStep('Uploading…', file.name, 0)
                 const up = await uploadLocal.upload({
-                  owner: project.ownerId,
+                  owner: externalSubject,
                   file,
                   onProgress: (pct) => setUploadPct(pct),
                 })
@@ -175,7 +174,6 @@ export default function Overview() {
               setStep('Linking to project…', 'Associating media')
               await linkMedia.mutateAsync({
                 projectId: project.id,
-                ownerExternalSubject: externalSubject,
                 mediaId,
               })
               success('Media linked to project ✅')

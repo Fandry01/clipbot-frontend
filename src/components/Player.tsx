@@ -15,12 +15,19 @@ type Props = {
   captionsVttUrl?: string      // optioneel VTT
   captionsLabel?: string       // bv. "EN"
   downloadName?: string        // bestandsnaam bij download (bv. "clip.mp4")
+  startAt?: number
+
   resolveDownloadUrl?: () => Promise<string> | string
   onTime?: (t: number) => void
 }
 
 const Player = forwardRef<PlayerHandle, Props>(function Player(
-  { src, poster, aspect = '16:9', captionsVttUrl, captionsLabel = 'CC', downloadName = 'clip.mp4', resolveDownloadUrl, onTime },
+  { src, poster, aspect = '16:9', 
+    captionsVttUrl, 
+    captionsLabel = 'CC', 
+    downloadName = 'clip.mp4', 
+    resolveDownloadUrl, onTime, 
+    startAt },
   ref
 ) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -43,6 +50,35 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
       v.playbackRate = r; setSpeed(r)
     },
   }), [])
+
+  // ✅ startAt toepassen zodra metadata er is, en bij prop-wijziging
+useEffect(() => {
+  const v = videoRef.current
+  if (!v || !src) return
+  if (!src.endsWith('.m3u8')) return            // ← MP4 niet via effect doen
+
+  const canNative = v.canPlayType('application/vnd.apple.mpegURL')
+  if (canNative) { v.src = src; return }
+
+  let hls: any, aborted = false
+  ;(async () => {
+    try {
+      const mod = await import('hls.js')
+      if (aborted) return
+      const Hls = mod.default
+      if (Hls.isSupported()) {
+        hls = new Hls({ enableWorker: true })
+        hls.loadSource(src)
+        hls.attachMedia(v)
+      } else {
+        v.src = src
+      }
+    } catch {
+      v.src = src
+    }
+  })()
+  return () => { aborted = true; if (hls) { try { hls.destroy() } catch {} } }
+}, [src])
 
   // Keyboard J/K/L
   useEffect(() => {
@@ -102,6 +138,16 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
   const aspectClass =
     aspect === '9:16' ? 'aspect-[9/16]' : aspect === '1:1' ? 'aspect-square' : 'aspect-video'
 
+    useEffect(() => {
+    const v = videoRef.current; if (!v) return
+    const onErr = () => console.warn('video error', v.error)
+    const onMeta = () => console.log('loadedmetadata', { dur: v.duration })
+    const onPlay = () => console.log('play')
+    v.addEventListener('error', onErr)
+    v.addEventListener('loadedmetadata', onMeta)
+    v.addEventListener('play', onPlay)
+    return () => { v.removeEventListener('error', onErr); v.removeEventListener('loadedmetadata', onMeta); v.removeEventListener('play', onPlay) }
+    }, [src])
   // Download handler
   const onDownload = async () => {
     if (!resolveDownloadUrl) return
@@ -131,6 +177,8 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
           controls
           className="w-full h-full object-cover"
           playsInline
+          crossOrigin="anonymous"
+           {...(src && !src.endsWith('.m3u8') ? { src } : {})}
         >
           {captionsVttUrl && (
             <track

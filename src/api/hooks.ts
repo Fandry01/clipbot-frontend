@@ -9,7 +9,7 @@ import axios from 'axios'
 import { fileOutUrl } from '../api/file'
 import {useEffect, useRef, useState} from "react";
 
-export type AssetKind = 'CLIP_MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT'
+export type AssetKind = 'MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT'
 
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
@@ -43,8 +43,8 @@ export function useCreateProject() {
 export function useLinkMediaToProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (p: { projectId: UUID; ownerId: UUID; mediaId: UUID }) => {
-      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, { ownerId: p.ownerId, mediaId: p.mediaId })
+    mutationFn: async (p: { projectId: UUID; mediaId: UUID }) => {
+      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, { mediaId: p.mediaId })
       return data
     },
     onSuccess: (_, p) => {
@@ -219,7 +219,7 @@ export function useEnqueueRender() {
   return useMutation({
     mutationFn: async (clipId: UUID) => {
       const { data } = await api.post(`/v1/clips/enqueue-render`, { clipId })
-      return data as { jobId: UUID }
+      return data as string // jobId
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['project-clips'] })
@@ -371,13 +371,14 @@ export type AssetResponse = {
   relatedMediaId?: string | null
 }
 
-export function useLatestClipAsset(clipId?: string, kind?: AssetKind) {
+export function useLatestClipAsset(clipId?: string, kind?: AssetKind, ownerExternalSubject?: string) {
   return useQuery({
-    enabled: !!clipId && !!kind,
-    queryKey: ['asset-latest', clipId, kind],
+    enabled: !!clipId && !!kind && !!ownerExternalSubject,
+    queryKey: ['asset-latest', clipId, kind,ownerExternalSubject],
     queryFn: async () => {
       try {
-        const { data } = await api.get(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
+        const { data } = await api.get(`/v1/assets/latest/clip/${clipId}`, { params: { kind, ownerExternalSubject }, 
+        })
         return data as AssetResponse
       } catch (e: any) {
         if (e?.response?.status === 404) return null // geen asset (nog)

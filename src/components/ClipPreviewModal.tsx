@@ -27,7 +27,7 @@ export default function ClipPreviewModal({
     if (!open || !clip) return null
 
     // Assets (alleen fetchen als open om chatter te voorkomen)
-    const mp4Q   = useLatestClipAsset(open ? clip.id : undefined, 'CLIP_MP4')
+    const mp4Q   = useLatestClipAsset(open ? clip.id : undefined, 'MP4')
     const vttQ   = useLatestClipAsset(open ? clip.id : undefined, 'SUB_VTT')
     const thumbQ = useLatestClipAsset(open ? clip.id : undefined, 'THUMBNAIL')
 
