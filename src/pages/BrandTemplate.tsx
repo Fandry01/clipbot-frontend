@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import UiSwitch from '../components/UiSwitch'
 import UiRange from '../components/UiRange'
@@ -28,6 +28,7 @@ type TemplateState = {
     subtitlePrimaryColor: string
     subtitleOutlineColor: string
     subtitleOutlineWidth: number
+    brandLogoDataUrl: string | null
 }
 
 const STORAGE_KEY = 'brandTemplate.v1'
@@ -62,6 +63,8 @@ export default function BrandTemplate() {
     const [subtitleOutlineWidth, setSubtitleOutlineWidth] = useState(2)
 
     const subtitleFont = getSubtitleFont(subtitleFontId)
+    const [brandLogoDataUrl, setBrandLogoDataUrl] = useState<string | null>(null)
+    const logoInputRef = useRef<HTMLInputElement | null>(null)
 
 
     // compose tot één object (makkelijker saven)
@@ -70,10 +73,10 @@ export default function BrandTemplate() {
         overlay, intro, music,
         removeFiller, removePauses, keywordsHL, aiEmojis, autoBroll, autoTransitions,
         brandPrimaryColor, brandSecondaryColor, subtitleFontId, subtitlePrimaryColor, subtitleOutlineColor,
-        subtitleOutlineWidth,
+        subtitleOutlineWidth, brandLogoDataUrl,
     }), [preset, layout, captionStyle, captionSize, stroke, overlay, intro, music, removeFiller, removePauses,
         keywordsHL, aiEmojis, autoBroll, autoTransitions,brandPrimaryColor, brandSecondaryColor,
-        subtitleFontId, subtitlePrimaryColor, subtitleOutlineColor, subtitleOutlineWidth,])
+        subtitleFontId, subtitlePrimaryColor, subtitleOutlineColor, subtitleOutlineWidth,  brandLogoDataUrl,  ])
 
     // ---------- LOAD once ----------
     useEffect(() => {
@@ -101,6 +104,7 @@ export default function BrandTemplate() {
             setSubtitlePrimaryColor(saved.subtitlePrimaryColor ?? '#FFFFFF')
             setSubtitleOutlineColor(saved.subtitleOutlineColor ?? '#000000')
             setSubtitleOutlineWidth(saved.subtitleOutlineWidth ?? 2)
+            setBrandLogoDataUrl(saved.brandLogoDataUrl ?? null)
         } catch {}
     }, [])
 
@@ -122,6 +126,18 @@ export default function BrandTemplate() {
             localStorage.setItem(ACTIVE_KEY, JSON.stringify({ projectId, tpl, at: Date.now() }))
         } catch {}
         nav(`/dashboard/project/${projectId}?applied=1`)
+    }
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                setBrandLogoDataUrl(reader.result) // data:image/...;base64,....
+            }
+        }
+        reader.readAsDataURL(file)
     }
 
     return (
@@ -188,7 +204,40 @@ export default function BrandTemplate() {
                         <Row label="Music">
                             <UiSwitch checked={music} onChange={setMusic} />
                         </Row>
-
+                        <Row label="Logo">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    className="btn-ghost text-xs"
+                                    onClick={() => logoInputRef.current?.click()}
+                                >
+                                    {brandLogoDataUrl ? 'Change logo' : 'Upload logo'}
+                                </button>
+                                {brandLogoDataUrl && (
+                                    <>
+                                        <img
+                                            src={brandLogoDataUrl}
+                                            alt="Brand logo preview"
+                                            className="h-6 w-auto rounded bg-black/40 px-1"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="btn-ghost text-xs text-red-300"
+                                            onClick={() => setBrandLogoDataUrl(null)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </>
+                                )}
+                                <input
+                                    ref={logoInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleLogoChange}
+                                />
+                            </div>
+                        </Row>
                         <Row label="Primary color">
                             <input
                                 type="color"
@@ -290,11 +339,21 @@ export default function BrandTemplate() {
                                 aspect-[9/16] w-[360px] sm:w-[420px] lg:w-[460px]">
                             <img src="/src/assets/thumb1.jpg" className="w-full h-full object-cover"/>
                             {overlay &&
-                                <div className="absolute top-2 left-2">
-                                    <span className="badge"
-                                          style={{ backgroundColor: brandPrimaryColor, color: brandSecondaryColor }}>
+                                <div className="absolute top-2 left-2 flex items-center gap-2">
+                                    {brandLogoDataUrl ? (
+                                        <img
+                                            src={brandLogoDataUrl}
+                                            alt="Brand logo"
+                                            className="h-8 w-auto rounded-md bg-black/40 p-1"
+                                        />
+                                    ): (
+                                        <span
+                                            className="badge"
+                                            style={{ backgroundColor: brandPrimaryColor, color: brandSecondaryColor }}
+                                        >
                                         Demo
-                                    </span>
+                                      </span>
+                                    )}
                                 </div>}
                             <div
                                 className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg"
@@ -302,8 +361,10 @@ export default function BrandTemplate() {
                                     fontSize: `${captionSize}px`,
                                     fontFamily: subtitleFont.css,
                                     color: subtitlePrimaryColor,
-                                    WebkitTextStroke: `${subtitleOutlineWidth}px ${subtitleOutlineColor}`,
                                     backgroundColor: 'rgba(0,0,0,0.6)',
+                                    ...(subtitleOutlineWidth > 0
+                                        ? {WebkitTextStroke: `${subtitleOutlineWidth}px ${subtitleOutlineColor}`}
+                                        : {}),
                                 }}
                             >
                                 One line
