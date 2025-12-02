@@ -1,10 +1,17 @@
-import {useEffect, useRef, useState} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
+// src/pages/ClipEditor.tsx
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import ClipPlayer from '../components/clipPlayer'
-import {PlayerHandle} from '../components/Player'
+import { PlayerHandle } from '../components/Player'
 import QualityChecklist from '../components/QualityChecklist'
-import {usePatchClip} from '../api/hooks'
-import {SUBTITLE_STYLE_PRESETS, SubtitlePresetId, getSubtitlePreset} from "../subtitles/styles";
+import { usePatchClip } from '../api/hooks'
+import {
+    SUBTITLE_STYLE_PRESETS,
+    SubtitlePresetId,
+    getSubtitlePreset,
+    SubtitleFontId,
+    getSubtitleFont,
+} from '../subtitles/styles'
 
 // ✅ lokaal trim-type + helpers
 type Trim = { in: number; out: number }
@@ -13,31 +20,52 @@ const TRIM_KEY = (id: string) => `clip.${id}.trim`
 function loadTrim(id: string): Trim {
     try {
         return JSON.parse(localStorage.getItem(TRIM_KEY(id)) || '')
-    } catch {
-    }
-    return {in: 0, out: 30}
+    } catch {}
+    return { in: 0, out: 30 }
 }
 
 function saveTrimLocal(id: string, v: Trim) {
     try {
         localStorage.setItem(TRIM_KEY(id), JSON.stringify(v))
-    } catch {
-    }
+    } catch {}
 }
 
+// 🔗 BrandTemplate localStorage payload (subset; alles optioneel)
+type ActiveBrandTemplate = {
+    layout?: '9:16' | '16:9' | '1:1'
+    brandPrimaryColor?: string
+    brandSecondaryColor?: string
+    brandLogoDataUrl?: string | null
+    subtitleFontId?: SubtitleFontId
+    subtitlePrimaryColor?: string
+    subtitleOutlineColor?: string
+    subtitleOutlineWidth?: number
+}
+
+type ActiveBrandStorage = {
+    projectId?: string
+    tpl?: ActiveBrandTemplate
+    at?: number
+}
+
+const BRAND_ACTIVE_KEY = 'brandTemplate.active'
+
 export default function ClipEditor() {
-    const {id = ''} = useParams()                 // ← id als string
+    const { id = '' } = useParams() // ← id als string
     const ownerExternalSubject = localStorage.getItem('ownerExternalSubject') || 'demo-user-1'
     const nav = useNavigate()
     const patchClip = usePatchClip()
 
     const [aspect, setAspect] = useState<'16:9' | '9:16' | '1:1'>('9:16')
     const [tab, setTab] = useState<'trim' | 'sub' | 'brand' | 'export'>('trim')
-    const [qc] = useState({boundary: true, noWordCut: true, leadInOut: true, loudness: true, subtitleCps: true})
+    const [qc] = useState({ boundary: true, noWordCut: true, leadInOut: true, loudness: true, subtitleCps: true })
 
+    // 🔗 actieve subtitle preset
     const [subtitlePresetId, setSubtitlePresetId] = useState<SubtitlePresetId>('TIKTOK_POP')
     const subtitlePreset = getSubtitlePreset(subtitlePresetId)
-    const subtitleStyle = subtitlePreset.style
+
+    // 🔗 actieve brand template (uit localStorage)
+    const [brandTpl, setBrandTpl] = useState<ActiveBrandTemplate | null>(null)
 
     // ✅ trim state + undo/redo + current time
     const [trim, setTrim] = useState<Trim>(() => loadTrim(id))
@@ -51,6 +79,55 @@ export default function ClipEditor() {
     const [isExporting, setIsExporting] = useState(false)
     const [lastExportJobId, setLastExportJobId] = useState<string | null>(null)
 
+    // 🔗 Load actieve brand template uit localStorage
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(BRAND_ACTIVE_KEY)
+            if (!raw) return
+            const parsed: ActiveBrandStorage = JSON.parse(raw)
+            if (!parsed.tpl) return
+            setBrandTpl(parsed.tpl)
+
+            // Als layout in brand aanwezig is, gebruik die als default aspect
+            if (parsed.tpl.layout) {
+                setAspect(parsed.tpl.layout)
+            }
+        } catch {
+            // ignore
+        }
+    }, [])
+
+    // 🔗 Brand-aware subtitle style:
+    // - basis: preset.style (size, margins, alignment, etc.)
+    // - overrides vanuit brand: font + kleuren + outline
+    const effectiveSubtitleStyle = useMemo(() => {
+        const base = subtitlePreset.style
+        if (!brandTpl) return base
+
+        const fontOverride = brandTpl.subtitleFontId
+            ? getSubtitleFont(brandTpl.subtitleFontId as SubtitleFontId)
+            : null
+
+        return {
+            ...base,
+            fontFamily: fontOverride?.ass ?? base.fontFamily,
+            primaryColor: brandTpl.subtitlePrimaryColor ?? base.primaryColor,
+            outlineColor: brandTpl.subtitleOutlineColor ?? base.outlineColor,
+            outline:
+                typeof brandTpl.subtitleOutlineWidth === 'number'
+                    ? brandTpl.subtitleOutlineWidth
+                    : base.outline,
+        }
+    }, [subtitlePreset, brandTpl])
+
+    const previewFont = useMemo(() => {
+        if (brandTpl?.subtitleFontId) {
+            return getSubtitleFont(brandTpl.subtitleFontId as SubtitleFontId)
+        }
+        // fallback: font gebaseerd op preset alleen (ass-naam werkt niet perfect in CSS, maar beter dan niets)
+        return null
+    }, [brandTpl])
+
     // ✅ state change helper
     const push = (next: Trim) => {
         setUndo(u => [...u, trim])
@@ -62,7 +139,7 @@ export default function ClipEditor() {
         if (!u.length) return u
         const prev = u[u.length - 1]
         setRedo(r => [trim, ...r])
-        setTrim(prev);
+        setTrim(prev)
         saveTrimLocal(id, prev)
         return u.slice(0, -1)
     })
@@ -70,7 +147,7 @@ export default function ClipEditor() {
         if (!r.length) return r
         const next = r[0]
         setUndo(u => [...u, trim])
-        setTrim(next);
+        setTrim(next)
         saveTrimLocal(id, next)
         return r.slice(1)
     })
@@ -87,17 +164,17 @@ export default function ClipEditor() {
                 // play/pause toggle via Player controls werkt al; optioneel
             }
             if (e.key.toLowerCase() === 'i') {
-                if (currentTime < trim.out) push({...trim, in: Math.max(0, currentTime)})
+                if (currentTime < trim.out) push({ ...trim, in: Math.max(0, currentTime) })
             }
             if (e.key.toLowerCase() === 'o') {
-                if (currentTime > trim.in) push({...trim, out: Math.max(currentTime, trim.in + 0.05)})
+                if (currentTime > trim.in) push({ ...trim, out: Math.max(currentTime, trim.in + 0.05) })
             }
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
-                e.preventDefault();
+                e.preventDefault()
                 e.shiftKey ? redo() : undo()
             }
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
-                e.preventDefault();
+                e.preventDefault()
                 redo()
             }
         }
@@ -120,23 +197,25 @@ export default function ClipEditor() {
         if (!id) return
         setIsExporting(true)
         try {
-            const res = await fetch(`/v1/render/export?ownerExternalSubject=${encodeURIComponent(ownerExternalSubject)}`,
+            const res = await fetch(
+                `/v1/render/export?ownerExternalSubject=${encodeURIComponent(ownerExternalSubject)}`,
                 {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         clipId: id,
-                        subtitleStyle,
+                        subtitleStyle: effectiveSubtitleStyle, // 🔗 brand-aware style meegeven
                         profile: null,
                     }),
-                },)
+                },
+            )
             if (!res.ok) {
                 const text = await res.text()
                 throw new Error(text || 'export Failed')
             }
             const jobId = await res.text()
             setLastExportJobId(jobId)
-            alert(`export gestart (jobId: ${jobId}`)
+            alert(`export gestart (jobId: ${jobId})`)
         } catch (e: any) {
             console.error('Export Failed', e)
             alert(`Export failed: ${e?.message || e}`)
@@ -172,30 +251,43 @@ export default function ClipEditor() {
                     <div className="text-sm mb-2">Timeline</div>
                     <div className="h-24 bg-gradient-to-r from-white/10 to-white/5 rounded-lg relative">
                         {/* current time needle */}
-                        <div className="absolute top-0 bottom-0 w-0.5 bg-white"
-                             style={{left: `${Math.min(100, (currentTime / 180) * 100)}%`}}/>
+                        <div
+                            className="absolute top-0 bottom-0 w-0.5 bg-white"
+                            style={{ left: `${Math.min(100, (currentTime / 180) * 100)}%` }}
+                        />
                         {/* geselecteerde range highlight */}
-                        <div className="absolute inset-y-0 bg-white/20"
-                             style={{
-                                 left: `${(trim.in / 180) * 100}%`,
-                                 width: `calc(${(trim.out / 180) * 100}% - ${(trim.in / 180) * 100}%)`
-                             }}/>
+                        <div
+                            className="absolute inset-y-0 bg-white/20"
+                            style={{
+                                left: `${(trim.in / 180) * 100}%`,
+                                width: `calc(${(trim.out / 180) * 100}% - ${(trim.in / 180) * 100}%)`,
+                            }}
+                        />
                         <div className="absolute inset-x-0 bottom-0 text-[10px] text-muted px-2 py-1">
                             waveform placeholder · Range {fmt(trim.in)}–{fmt(trim.out)} · Now {fmt(currentTime)}
                         </div>
                     </div>
                     <div className="flex items-center gap-2 mt-2 text-sm">
-                        <button className="btn-ghost" onClick={() => push({...trim, in: Math.max(0, currentTime)})}>I
-                            (Set In)
+                        <button className="btn-ghost" onClick={() => push({ ...trim, in: Math.max(0, currentTime) })}>
+                            I (Set In)
                         </button>
-                        <button className="btn-ghost"
-                                onClick={() => push({...trim, out: Math.max(currentTime, trim.in + 0.05)})}>O (Set Out)
+                        <button
+                            className="btn-ghost"
+                            onClick={() => push({ ...trim, out: Math.max(currentTime, trim.in + 0.05) })}
+                        >
+                            O (Set Out)
                         </button>
-                        <button className="btn-ghost"
-                                onClick={() => push({in: Math.max(0, trim.in - 0.2), out: trim.out})}>-0.2s In
+                        <button
+                            className="btn-ghost"
+                            onClick={() => push({ in: Math.max(0, trim.in - 0.2), out: trim.out })}
+                        >
+                            -0.2s In
                         </button>
-                        <button className="btn-ghost" onClick={() => push({in: trim.in, out: trim.out + 0.2})}>+0.2s
-                            Out
+                        <button
+                            className="btn-ghost"
+                            onClick={() => push({ in: trim.in, out: trim.out + 0.2 })}
+                        >
+                            +0.2s Out
                         </button>
                         <div className="ml-auto text-muted">Use J/K/L, arrows, Alt/Shift</div>
                     </div>
@@ -207,7 +299,9 @@ export default function ClipEditor() {
                         {(['trim', 'sub', 'brand', 'export'] as const).map(t => (
                             <button
                                 key={t}
-                                className={`px-3 py-1 rounded-full text-sm border ${tab === t ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'}`}
+                                className={`px-3 py-1 rounded-full text-sm border ${
+                                    tab === t ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'
+                                }`}
                                 onClick={() => setTab(t)}
                             >
                                 {t === 'trim' ? 'Trim' : t === 'sub' ? 'Subtitles' : t === 'brand' ? 'Brand' : 'Export'}
@@ -215,9 +309,11 @@ export default function ClipEditor() {
                         ))}
                     </div>
 
-                    {tab === 'trim' &&
-                        <div className="text-sm text-muted">Set in/out met I/O, pijltjes voor seek (Alt = fijn, Shift =
-                            grof). Save = PATCH naar backend.</div>}
+                    {tab === 'trim' && (
+                        <div className="text-sm text-muted">
+                            Set in/out met I/O, pijltjes voor seek (Alt = fijn, Shift = grof). Save = PATCH naar backend.
+                        </div>
+                    )}
 
                     {tab === 'sub' && (
                         <div className="space-y-3">
@@ -225,7 +321,7 @@ export default function ClipEditor() {
                                 <div>
                                     <div className="text-sm font-medium">Subtitle style</div>
                                     <div className="text-xs text-muted">
-                                        Kies een preset; later gebruiken we deze bij export.
+                                        Kies een preset; export gebruikt deze stijl, gecombineerd met je brand.
                                     </div>
                                 </div>
                                 <div className="text-xs text-muted">
@@ -257,24 +353,24 @@ export default function ClipEditor() {
                                     <div className="text-[11px] text-muted">{subtitlePreset.description}</div>
                                 )}
                                 <div className="mt-1 text-[11px] text-muted">
-                                    {subtitleStyle.fontFamily} · {subtitleStyle.fontSize}px ·
-                                    {' '}align {subtitleStyle.alignment} · outline {subtitleStyle.outline}px
+                                    {effectiveSubtitleStyle.fontFamily} · {effectiveSubtitleStyle.fontSize}px · align{' '}
+                                    {effectiveSubtitleStyle.alignment} · outline {effectiveSubtitleStyle.outline}px
                                 </div>
                                 {/* simpele “preview” tekst */}
                                 <div className="mt-2 text-center text-sm">
-                                    <span
-                                        style={{
-                                          fontFamily: subtitleStyle.fontFamily,
-                                          fontSize: subtitleStyle.fontSize,
-                                          color: subtitleStyle.primaryColor,
-                                          textShadow:
-                                              subtitleStyle.outline > 0
-                                                  ? `0 0 ${subtitleStyle.outline}px ${subtitleStyle.outlineColor}`
-                                                  : undefined,
-                                        }}
-                                    >
-                                      Dit is een voorbeeld ondertitel
-                                    </span>
+                  <span
+                      style={{
+                          fontFamily: previewFont?.css ?? effectiveSubtitleStyle.fontFamily,
+                          fontSize: effectiveSubtitleStyle.fontSize,
+                          color: effectiveSubtitleStyle.primaryColor,
+                          textShadow:
+                              effectiveSubtitleStyle.outline > 0
+                                  ? `0 0 ${effectiveSubtitleStyle.outline}px ${effectiveSubtitleStyle.outlineColor}`
+                                  : undefined,
+                      }}
+                  >
+                    Dit is een voorbeeld ondertitel
+                  </span>
                                 </div>
                             </div>
                         </div>
@@ -282,10 +378,49 @@ export default function ClipEditor() {
 
                     {tab === 'brand' && (
                         <div className="space-y-2 text-sm">
-                            <div>Logo: <span className="badge">upload</span></div>
-                            <div>Colors: <span className="badge">primary</span> <span className="badge">secondary</span>
-                            </div>
-                            <div>Font: <span className="badge">Inter</span></div>
+                            {brandTpl ? (
+                                <>
+                                    <div className="text-xs text-muted">
+                                        Brand template actief vanuit Brand settings.
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs">Primary:</span>
+                                        <span
+                                            className="inline-block h-4 w-4 rounded border border-border"
+                                            style={{ backgroundColor: brandTpl.brandPrimaryColor || '#FFB020' }}
+                                        />
+                                        <span className="text-xs">Secondary:</span>
+                                        <span
+                                            className="inline-block h-4 w-4 rounded border border-border"
+                                            style={{ backgroundColor: brandTpl.brandSecondaryColor || '#FFFFFF' }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs">Subtitle font:</span>
+                                        <span className="badge">
+                      {brandTpl.subtitleFontId || 'preset default'}
+                    </span>
+                                    </div>
+                                    {brandTpl.brandLogoDataUrl && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs">Logo:</span>
+                                            <img
+                                                src={brandTpl.brandLogoDataUrl}
+                                                className="h-6 w-auto rounded bg-black/40 px-1"
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-xs text-muted mb-1">
+                                        Geen actieve brand template gevonden. Stel er één in bij Brand settings.
+                                    </div>
+                                    <div>Logo: <span className="badge">upload in Brand</span></div>
+                                    <div>Colors: <span className="badge">primary</span> <span className="badge">secondary</span></div>
+                                    <div>Font: <span className="badge">preset font</span></div>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -293,9 +428,9 @@ export default function ClipEditor() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Preset</span>
-                                <button className="btn-ghost">TikTok (9:16)</button>
-                                <button className="btn-ghost">YouTube (16:9)</button>
-                                <button className="btn-ghost">Square (1:1)</button>
+                                <button className="btn-ghost" onClick={() => setAspect('9:16')}>TikTok (9:16)</button>
+                                <button className="btn-ghost" onClick={() => setAspect('16:9')}>YouTube (16:9)</button>
+                                <button className="btn-ghost" onClick={() => setAspect('1:1')}>Square (1:1)</button>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Resolution</span>
@@ -304,14 +439,22 @@ export default function ClipEditor() {
                                     <option>720x1280</option>
                                 </select>
                             </div>
-                          <div className="text-xs text-muted">
-                            Export gebruikt: <span className="font-medium">{subtitlePreset.label}</span> Subtitle Style.
-                          </div>
-                            <button className="btn-primary mt-2"
-                            onClick={handleExport}
-                            disabled={isExporting}>{isExporting ? 'Exporting…' : 'Export with current subtitle style'}</button>
-                          {lastExportJobId && (<div className="text-[11px] text-muted mt-1"> Job ID{lastExportJobId}</div>
-                          )}
+                            <div className="text-xs text-muted">
+                                Export gebruikt: <span className="font-medium">{subtitlePreset.label}</span> subtitle style
+                                {brandTpl ? ' + actieve brand template.' : '.'}
+                            </div>
+                            <button
+                                className="btn-primary mt-2"
+                                onClick={handleExport}
+                                disabled={isExporting}
+                            >
+                                {isExporting ? 'Exporting…' : 'Export with current subtitle style'}
+                            </button>
+                            {lastExportJobId && (
+                                <div className="text-[11px] text-muted mt-1">
+                                    Job ID: {lastExportJobId}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -324,14 +467,16 @@ export default function ClipEditor() {
                     {(['16:9', '1:1', '9:16'] as const).map(a => (
                         <button
                             key={a}
-                            className={`px-3 py-1 rounded-full text-sm border ${aspect === a ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'}`}
+                            className={`px-3 py-1 rounded-full text-sm border ${
+                                aspect === a ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'
+                            }`}
                             onClick={() => setAspect(a)}
                         >
                             {a}
                         </button>
                     ))}
                 </div>
-                <QualityChecklist qc={qc}/>
+                <QualityChecklist qc={qc} />
             </div>
         </div>
     )
