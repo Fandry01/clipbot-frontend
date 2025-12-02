@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import UiSwitch from '../components/UiSwitch'
 import UiRange from '../components/UiRange'
 import UiSelect from '../components/UiSelect'
+import { getSubtitleFont } from '../subtitles/styles'
+import { SubtitleFontId, SUBTITLE_FONTS } from '../subtitles/styles'
 
 type TemplateState = {
     preset: string
@@ -19,6 +21,13 @@ type TemplateState = {
     aiEmojis: boolean
     autoBroll: boolean
     autoTransitions: boolean
+
+    brandPrimaryColor: string
+    brandSecondaryColor: string
+    subtitleFontId: SubtitleFontId
+    subtitlePrimaryColor: string
+    subtitleOutlineColor: string
+    subtitleOutlineWidth: number
 }
 
 const STORAGE_KEY = 'brandTemplate.v1'
@@ -45,13 +54,26 @@ export default function BrandTemplate() {
     const [aiEmojis, setAiEmojis] = useState(true)
     const [autoBroll, setAutoBroll] = useState(false)
     const [autoTransitions, setAutoTransitions] = useState(false)
+    const [brandPrimaryColor, setBrandPrimaryColor] = useState('#FFB020')
+    const [brandSecondaryColor, setBrandSecondaryColor] = useState('#FFFFFF')
+    const [subtitleFontId, setSubtitleFontId] = useState<SubtitleFontId>('roboto')
+    const [subtitlePrimaryColor, setSubtitlePrimaryColor] = useState('#FFFFFF')
+    const [subtitleOutlineColor, setSubtitleOutlineColor] = useState('#000000')
+    const [subtitleOutlineWidth, setSubtitleOutlineWidth] = useState(2)
+
+    const subtitleFont = getSubtitleFont(subtitleFontId)
+
 
     // compose tot één object (makkelijker saven)
     const tpl: TemplateState = useMemo(() => ({
         preset, layout, captionStyle, captionSize, stroke,
         overlay, intro, music,
         removeFiller, removePauses, keywordsHL, aiEmojis, autoBroll, autoTransitions,
-    }), [preset, layout, captionStyle, captionSize, stroke, overlay, intro, music, removeFiller, removePauses, keywordsHL, aiEmojis, autoBroll, autoTransitions])
+        brandPrimaryColor, brandSecondaryColor, subtitleFontId, subtitlePrimaryColor, subtitleOutlineColor,
+        subtitleOutlineWidth,
+    }), [preset, layout, captionStyle, captionSize, stroke, overlay, intro, music, removeFiller, removePauses,
+        keywordsHL, aiEmojis, autoBroll, autoTransitions,brandPrimaryColor, brandSecondaryColor,
+        subtitleFontId, subtitlePrimaryColor, subtitleOutlineColor, subtitleOutlineWidth,])
 
     // ---------- LOAD once ----------
     useEffect(() => {
@@ -73,6 +95,12 @@ export default function BrandTemplate() {
             setAiEmojis(saved.aiEmojis ?? true)
             setAutoBroll(!!saved.autoBroll)
             setAutoTransitions(!!saved.autoTransitions)
+            setBrandPrimaryColor(saved.brandPrimaryColor ?? '#FFB020')
+            setBrandSecondaryColor(saved.brandSecondaryColor ?? '#FFFFFF')
+            setSubtitleFontId(saved.subtitleFontId ?? 'roboto')
+            setSubtitlePrimaryColor(saved.subtitlePrimaryColor ?? '#FFFFFF')
+            setSubtitleOutlineColor(saved.subtitleOutlineColor ?? '#000000')
+            setSubtitleOutlineWidth(saved.subtitleOutlineWidth ?? 2)
         } catch {}
     }, [])
 
@@ -151,18 +179,94 @@ export default function BrandTemplate() {
                     </Section>
 
                     <Section title="Brand">
-                        <Row label="Overlay (logo, CTA)"><UiSwitch checked={overlay} onChange={setOverlay} /></Row>
-                        <Row label="Intro/Outro"><UiSwitch checked={intro} onChange={setIntro} /></Row>
-                        <Row label="Music"><UiSwitch checked={music} onChange={setMusic} /></Row>
+                        <Row label="Overlay (logo, CTA)">
+                            <UiSwitch checked={overlay} onChange={setOverlay} />
+                        </Row>
+                        <Row label="Intro/Outro">
+                            <UiSwitch checked={intro} onChange={setIntro} />
+                        </Row>
+                        <Row label="Music">
+                            <UiSwitch checked={music} onChange={setMusic} />
+                        </Row>
+
+                        <Row label="Primary color">
+                            <input
+                                type="color"
+                                value={brandPrimaryColor}
+                                onChange={e => setBrandPrimaryColor(e.target.value)}
+                                className="w-10 h-8 rounded border border-border bg-transparent"
+                            />
+                        </Row>
+                        <Row label="Secondary color">
+                            <input
+                                type="color"
+                                value={brandSecondaryColor}
+                                onChange={e => setBrandSecondaryColor(e.target.value)}
+                                className="w-10 h-8 rounded border border-border bg-transparent"
+                            />
+                        </Row>
+
+                        <Row label="Subtitle font">
+                            <UiSelect
+                                value={subtitleFontId}
+                                onChange={v => setSubtitleFontId(v as SubtitleFontId)}
+                                options={Object.values(SUBTITLE_FONTS).map(f => ({
+                                    value: f.id,
+                                    label: f.label,
+                                }))}
+                            />
+                        </Row>
+                        <Row label="Subtitle color">
+                            <input
+                                type="color"
+                                value={subtitlePrimaryColor}
+                                onChange={e => setSubtitlePrimaryColor(e.target.value)}
+                                className="w-10 h-8 rounded border border-border bg-transparent"
+                            />
+                        </Row>
+                        <Row label="Outline color">
+                            <input
+                                type="color"
+                                value={subtitleOutlineColor}
+                                onChange={e => setSubtitleOutlineColor(e.target.value)}
+                                className="w-10 h-8 rounded border border-border bg-transparent"
+                            />
+                        </Row>
+                        <Row label="Outline width">
+                            <UiRange
+                                value={subtitleOutlineWidth}
+                                onChange={setSubtitleOutlineWidth}
+                                min={0}
+                                max={8}
+                            />
+                        </Row>
                     </Section>
 
-                    <Section title="AI">
-                        <Row label="Remove filler words"><UiSwitch checked={removeFiller} onChange={setRemoveFiller} /></Row>
-                        <Row label="Remove pauses"><UiSwitch checked={removePauses} onChange={setRemovePauses} /></Row>
-                        <Row label="AI keywords highlighter"><UiSwitch checked={keywordsHL} onChange={setKeywordsHL} /></Row>
-                        <Row label="AI emojis"><UiSwitch checked={aiEmojis} onChange={setAiEmojis} /></Row>
-                        <Row label="Auto-generate stock B-roll"><UiSwitch checked={autoBroll} onChange={setAutoBroll} /></Row>
-                        <Row label="Auto transitions"><UiSwitch checked={autoTransitions} onChange={setAutoTransitions} /></Row>
+                    <Section title="AI (coming soon)">
+                        <div className="space-y-2 opacity-50 pointer-events-none">
+                            <div className="text-xs text-muted mb-1">
+                                Deze AI-helpers komen na versie 1. Je kunt ze nu nog niet aanpassen.
+                            </div>
+
+                            <Row label="Remove filler words">
+                                <UiSwitch checked={removeFiller} onChange={setRemoveFiller} />
+                            </Row>
+                            <Row label="Remove pauses">
+                                <UiSwitch checked={removePauses} onChange={setRemovePauses} />
+                            </Row>
+                            <Row label="AI keywords highlighter">
+                                <UiSwitch checked={keywordsHL} onChange={setKeywordsHL} />
+                            </Row>
+                            <Row label="AI emojis">
+                                <UiSwitch checked={aiEmojis} onChange={setAiEmojis} />
+                            </Row>
+                            <Row label="Auto-generate stock B-roll">
+                                <UiSwitch checked={autoBroll} onChange={setAutoBroll} />
+                            </Row>
+                            <Row label="Auto transitions">
+                                <UiSwitch checked={autoTransitions} onChange={setAutoTransitions} />
+                            </Row>
+                        </div>
                     </Section>
 
                     <Section title="Apply to project">
@@ -183,19 +287,31 @@ export default function BrandTemplate() {
                 <main className="flex items-start justify-center">
                     <div className="space-y-3">
                         <div className="relative bg-white/5 rounded-xl overflow-hidden shadow-card
-                aspect-[9/16] w-[360px] sm:w-[420px] lg:w-[460px]">
-                            <img src="/src/assets/thumb1.jpg" className="w-full h-full object-cover" />
-                            {overlay && <div className="absolute top-2 left-2"><span className="badge">Demo</span></div>}
+                                aspect-[9/16] w-[360px] sm:w-[420px] lg:w-[460px]">
+                            <img src="/src/assets/thumb1.jpg" className="w-full h-full object-cover"/>
+                            {overlay &&
+                                <div className="absolute top-2 left-2">
+                                    <span className="badge"
+                                          style={{ backgroundColor: brandPrimaryColor, color: brandSecondaryColor }}>
+                                        Demo
+                                    </span>
+                                </div>}
                             <div
-                                className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-black/60 text-sm"
-                                style={{ fontSize: `${captionSize}px`, WebkitTextStroke: `${stroke}px black` }}
+                                className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg"
+                                style={{
+                                    fontSize: `${captionSize}px`,
+                                    fontFamily: subtitleFont.css,
+                                    color: subtitlePrimaryColor,
+                                    WebkitTextStroke: `${subtitleOutlineWidth}px ${subtitleOutlineColor}`,
+                                    backgroundColor: 'rgba(0,0,0,0.6)',
+                                }}
                             >
                                 One line
                             </div>
                         </div>
 
                         <div className="text-sm text-muted">
-                            {layout} · {captionStyle} · size {captionSize}px · stroke {stroke}px ·
+                            {layout} · {captionStyle} ·size {captionSize}px · stroke {subtitleOutlineWidth}px ·
                             {overlay ? ' Overlay' : ''}{intro ? ' · Intro/Outro' : ''}{music ? ' · Music' : ''}
                             {removeFiller ? ' · no fillers' : ''}{removePauses ? ' · no pauses' : ''}
                             {keywordsHL ? ' · keywords' : ''}{aiEmojis ? ' · emojis' : ''}
