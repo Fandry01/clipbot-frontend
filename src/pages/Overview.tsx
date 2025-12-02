@@ -1,4 +1,5 @@
 // src/pages/Overview.tsx
+import { v4 as uuidv4 } from 'uuid'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CenterUploadCard from '../components/CenterUploadCard'
@@ -10,12 +11,9 @@ import IntakePanel from '../components/IntakePanel'
 import FlowProgressOverlay from '../components/FlowProgressOverlay'
 import {
   useProjectsBySubject,
-  useCreateProjectBySubject,
-  useCreateMediaFromUrl,
-  useLinkMediaToProject,   // ⬅︎ deze
   useMetadata,
   useUploadLocal,
-  useEnqueueDetect,
+  useOneClickOrchestrate,
 } from '../api/hooks'
 import ProjectCardSkeleton from '../components/ProjectCardSkeleton'
 import { useToast } from '../components/Toast'
@@ -27,21 +25,20 @@ localStorage.setItem('externalSubject', externalSubject)
 export default function Overview() {
   const [source, setSource] = useState<{ type: 'url' | 'file'; value: string; name?: string; file?: File } | null>(null)
   const [uploadPct, setUploadPct] = useState<number | null>(null)
+  const [idemKey, setIdemKey] = useState<string | null>(null)
+
   const nav = useNavigate()
   const { success, error, info } = useToast()
 
   // data hooks
   const projectsQ = useProjectsBySubject(externalSubject, 0, 12)
-  const createProject = useCreateProjectBySubject()
-  const createFromUrl = useCreateMediaFromUrl()
-  const linkMedia = useLinkMediaToProject()
   const uploadLocal = useUploadLocal()
-  const enqueueDetect = useEnqueueDetect()      // ✅
+  const orchestrate = useOneClickOrchestrate()
 
   const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
-  const isBusy = createProject.isPending || createFromUrl.isPending || linkMedia.isPending
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
   const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
+
   const [flowOpen, setFlowOpen] = useState(false)
   const [flowStep, setFlowStep] = useState<{ title: string; subtitle?: string; pct?: number } | null>(null)
 
@@ -49,8 +46,6 @@ export default function Overview() {
     setFlowOpen(true)
     setFlowStep({ title, subtitle, pct })
   }
-
-  const startDetectImmediately = true
 
   return (
     <div>
@@ -100,7 +95,8 @@ export default function Overview() {
                     project={{
                       id: p.id,
                       title: p.title,
-                      thumb: (p as any).thumbUrl || '/src/assets/thumb1.jpg',
+                      // 👇 correcte prop-naam uit backend
+                      thumb: (p as any).thumbnailUrl || '/src/assets/thumb1.jpg',
                       plan: 'Free',
                       status: '—',
                       duration: '',
@@ -116,49 +112,34 @@ export default function Overview() {
       ) : (
         <IntakePanel
           source={source}
-          disabled={isBusy || uploadPct !== null}
+          // knop disablen tijdens orchestrate, upload of metadata-fetch
+          disabled={orchestrate.isPending || uploadPct !== null || metaQ.isFetching}
           busyLabel={
             uploadPct !== null
               ? `Uploading… ${uploadPct}%`
-              : createFromUrl.isPending
-              ? 'Registering media…'
-              : linkMedia.isPending
-              ? 'Linking to project…'
-              : createProject.isPending
-              ? 'Creating project…'
+              : orchestrate.isPending
+              ? 'Starting…'
               : undefined
           }
           metadata={source?.type === 'url' ? metaQ.data : undefined}
           metaLoading={source?.type === 'url' ? metaQ.isLoading : false}
           metaError={source?.type === 'url' && metaQ.isError ? 'Failed to fetch metadata' : undefined}
           onStartJob={async (payload) => {
+            const idempotencyKey = idemKey ?? uuidv4()
+            setIdemKey(idempotencyKey)
+
             try {
-              setStep('Creating project…', 'Initializing workspace')
-              const title =
-                (payload?.title && String(payload.title).trim()) ||
-                metaQ.data?.title ||
-                'New project'
+              setStep('Preparing…', 'Initializing workflow')
+              let mediaId: string | undefined = undefined
+              let url: string | undefined = undefined
 
-              // 1) project kiezen of maken
-              const project =
-                projects[0] ||
-                (await createProject.mutateAsync({
-                  ownerExternalSubject: externalSubject,
-                  title,
-                  templateId: null,
-                }))
+              // Titel bepalen (getrimd)
+              let title = (payload?.title ?? metaQ.data?.title ?? (source?.type === 'file' ? 'New upload' : 'New project')).trim()
 
-              // 2) media registreren
-              let mediaId: string
-              if (source.type === 'url') {
-                setStep('Registering media…', 'Saving external link')
-                const m = await createFromUrl.mutateAsync({
-                  ownerId: project.ownerId,
-                  url: source.value,
-                })
-                mediaId = m.mediaId
+              if (source?.type === 'url') {
+                url = source.value
               } else {
-                const file = source.file // ✅ we gaan zo CenterUploadCard aanpassen
+                const file = source.file
                 if (!file) throw new Error('No file in source')
                 setUploadPct(0)
                 setStep('Uploading…', file.name, 0)
@@ -170,38 +151,48 @@ export default function Overview() {
                 mediaId = up.mediaId
               }
 
-              // 3) media → project koppelen
-              setStep('Linking to project…', 'Associating media')
-              await linkMedia.mutateAsync({
-                projectId: project.id,
+              // Orchestrator call
+              setStep('Ingest + detect + recommendations', 'Scheduling background jobs')
+              const res = await orchestrate.mutateAsync({
+                ownerExternalSubject: externalSubject,
+                url,
                 mediaId,
+                title,
+                idempotencyKey,
+                opts: {
+                  lang: 'auto',
+                  // 👇 correcte provider naam
+                  provider: 'fw',
+                  sceneThreshold: 0.3,
+                  topN: 6,
+                  enqueueRender: true,
+                },
               })
-              success('Media linked to project ✅')
 
-              // 4) detectie optioneel starten (géén /v1/jobs)
-              if (startDetectImmediately) {
-                setStep('Detecting & transcribing…', 'Running background jobs')
-                info('Detecting segments & transcript…')
-                try {
-                  const res = await enqueueDetect.mutateAsync({
-                    mediaId,
-                    lang: 'auto',
-                    provider: 'openai',
-                  })
-                  // res heeft { jobId, mediaId, status } – geen polling nodig voor MVP
-                  console.log('Detect enqueued', res)
-                } catch (e) {
-                  console.warn('Detect enqueue failed', e)
-                }
+              if (res.detectJob?.jobId) info('Detect enqueued')
+              if (res.recommendations && res.recommendations.computed === 0) {
+                info('Recommendations komen zodra detect klaar is')
               }
 
-              // 5) navigeren
               setStep('All set ✅', 'Opening your clips…', 100)
-              nav(`/dashboard/project/${project.id}`)
+              success('Flow started')
+              nav(`/dashboard/project/${res.projectId}`)
+              projectsQ.refetch().catch(() => {})
             } catch (e: any) {
-              error(e?.message || 'Failed to start')
+              const msg = e?.response?.data || e?.message || 'Failed to start'
+              if (typeof msg === 'string' && msg.includes('ORCHESTRATION_IN_PROGRESS')) {
+                info('Flow is al bezig voor deze key. Probeer zo opnieuw.')
+              } else if (typeof msg === 'string' && msg.includes('IDEMPOTENCY_KEY_REUSED_DIFFERENT_REQUEST')) {
+                error('Zelfde idempotency key met andere payload. Genereer een nieuwe.')
+              } else {
+                error(msg)
+              }
+              // Overlay open laten kan; of toon failure
+              setStep('Failed', typeof msg === 'string' ? msg : 'Something went wrong')
             } finally {
               setUploadPct(null)
+              setFlowOpen(false)
+              setIdemKey(null)
             }
           }}
           onCancel={() => {
@@ -209,13 +200,13 @@ export default function Overview() {
             setSource(null)
           }}
         />
-
       )}
+
       <FlowProgressOverlay
-          open={flowOpen}
-          title={flowStep?.title || 'Working…'}
-          subtitle={flowStep?.subtitle}
-          percent={flowStep?.pct}
+        open={flowOpen}
+        title={flowStep?.title || 'Working…'}
+        subtitle={flowStep?.subtitle}
+        percent={flowStep?.pct}
       />
     </div>
   )

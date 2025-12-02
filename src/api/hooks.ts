@@ -407,6 +407,45 @@ export function useOnScreen<T extends HTMLElement>(rootMargin = '0px') {
 
   return { ref, inView }
 }
+// ===== ONE-CLICK ORCHESTRATOR =====
+export type OneClickOpts = {
+  lang?: string;
+  provider?: 'fw' | 'openai';
+  sceneThreshold?: number;
+  topN?: number;
+  enqueueRender?: boolean;
+};
+
+export type OneClickRequest = {
+  ownerExternalSubject: string;
+  url?: string;                  // xor mediaId
+  mediaId?: string;              // xor url
+  title?: string;
+  opts?: OneClickOpts;
+  idempotencyKey: string;        // client generated UUID
+  projectId?: string;            // optional (upload → bestaand project)
+};
+
+export type OneClickResponse = {
+  projectId: string;
+  mediaId: string;
+  createdProject: boolean;
+  detectJob?: { jobId: string; status: string } | null;
+  recommendations?: { requested: number; computed: number } | null;
+  renderJobs?: Array<{ clipId: string; jobId: string; status: string }>;
+  thumbnailSource?: 'YOUTUBE' | 'CLIP' | 'DEFERRED' | 'NONE' | string;
+};
+
+export function useOneClickOrchestrate() {
+  return useMutation({
+    mutationFn: async (body: OneClickRequest) => {
+      const { data } = await api.post<OneClickResponse>('/v1/orchestrate/one-click', body);
+      return data;
+    }
+  });
+}
+
+
 
 // export function useClipPlayback(clipId?: string) {
 //   const enabled = !!clipId
