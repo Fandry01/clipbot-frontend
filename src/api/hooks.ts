@@ -9,8 +9,9 @@ import axios from 'axios'
 import { fileOutUrl } from '../api/file'
 import {useEffect, useRef, useState} from "react";
 
-/** ====== PROJECTS ====== */
+export type AssetKind = 'MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT'
 
+/** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
   return useQuery({
     queryKey: ['projects', ownerId, page, size],
@@ -42,8 +43,8 @@ export function useCreateProject() {
 export function useLinkMediaToProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (p: { projectId: UUID; ownerId: UUID; mediaId: UUID }) => {
-      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, { ownerId: p.ownerId, mediaId: p.mediaId })
+    mutationFn: async (p: { projectId: UUID; mediaId: UUID }) => {
+      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, { mediaId: p.mediaId })
       return data
     },
     onSuccess: (_, p) => {
@@ -52,7 +53,6 @@ export function useLinkMediaToProject() {
     }
   })
 }
-
 export function useProjectsBySubject(ownerExternalSubject: string, page=0, size=12) {
   return useQuery({
     queryKey: ['projects', 'bySubject', ownerExternalSubject, page, size],
@@ -66,15 +66,15 @@ export function useProjectsBySubject(ownerExternalSubject: string, page=0, size=
   })
 }
 export function useProjectClips(args: {
-  projectId: UUID; ownerExternalSubject: string; status?: string; page?: number; size?: number;
+  projectId: UUID; ownerId: UUID; status?: string; page?: number; size?: number;
   q?: string; minDurMs?: number; maxDurMs?: number; sort?: 'createdAt'|'score'|'duration'; order?: 'asc'|'desc'
 }) {
-  const { projectId, ownerExternalSubject, page=0, size=24, ...filters } = args
+  const { projectId, ownerId, page=0, size=24, ...filters } = args
   return useQuery({
-    queryKey: ['project-clips', projectId, ownerExternalSubject, page, size, filters],
+    queryKey: ['project-clips', projectId, ownerId, page, size, filters],
     queryFn: async () => {
       const { data } = await api.get<Page<ClipResponse>>(`/v1/projects/${projectId}/clips`, {
-        params: { ownerExternalSubject, page, size, ...filters }
+        params: { ownerId, page, size, ...filters }
       })
       return data
     }
@@ -91,41 +91,16 @@ export function useCreateProjectBySubject() {
   })
 }
 
-export function useProjectBySubject(projectId: UUID, ownerExternalSubject: string) {
-  return useQuery({
-    queryKey: ['project', projectId, ownerExternalSubject],
-    queryFn: async () => {
-      const { data } = await api.get<ProjectResponse>(`/v1/projects/${projectId}`, {
-        params: { ownerExternalSubject }
-      })
-      return data
-    }
-  })
-}
-
-// export function useLinkMediaToProjectBySubject() {
-//   const qc = useQueryClient()
-//   return useMutation({
-//     mutationFn: async (p: { projectId: UUID; ownerExternalSubject: string; mediaId: UUID }) => {
-//       // controller accepteert ownerExternalSubject in body
-//       const { data } = await api.post(`/v1/projects/${p.projectId}/media`, {
-//         ownerExternalSubject: p.ownerExternalSubject,
-//         mediaId: p.mediaId
-//       })
-//       return data
-//     },
-//     onSuccess: (_, p) => {
-//       qc.invalidateQueries({ queryKey: ['project', p.projectId] })
-//       qc.invalidateQueries({ queryKey: ['project-media', p.projectId] })
-//     }
-//   })
-// }
-
-export function useLinkMediaToProjectStrict() {
+export function useLinkMediaToProjectBySubject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (p: { projectId: UUID; mediaId: UUID }) => {
-      await api.post(`/v1/projects/${p.projectId}/media`, { mediaId: p.mediaId })
+    mutationFn: async (p: { projectId: UUID; ownerExternalSubject: string; mediaId: UUID }) => {
+      // controller accepteert ownerExternalSubject in body
+      const { data } = await api.post(`/v1/projects/${p.projectId}/media`, {
+        ownerExternalSubject: p.ownerExternalSubject,
+        mediaId: p.mediaId
+      })
+      return data
     },
     onSuccess: (_, p) => {
       qc.invalidateQueries({ queryKey: ['project', p.projectId] })
@@ -157,22 +132,10 @@ export function useMetadata(url?: string) {
   })
 }
 
-// export function useCreateMediaFromUrl() {
-//   return useMutation({
-//     mutationFn: async (p: { ownerId: UUID; url: string; source?: string }) => {
-//       const { data } = await api.post(`/v1/media/from-url`, p)
-//       return data as { mediaId: UUID; status: string; platform: string; durationMs?: number|null; thumbnail?: string|null; normalizedUrl?: string|null }
-//     }
-//   })
-// }
 export function useCreateMediaFromUrl() {
   return useMutation({
-    mutationFn: async (p: { ownerExternalSubject: string; url: string; source?: string }) => {
-      const { data } = await api.post(`/v1/media/from-url`, {
-        ownerExternalSubject: p.ownerExternalSubject,
-        url: p.url,
-        source: p.source ?? 'url',
-      })
+    mutationFn: async (p: { ownerId: UUID; url: string; source?: string }) => {
+      const { data } = await api.post(`/v1/media/from-url`, p)
       return data as { mediaId: UUID; status: string; platform: string; durationMs?: number|null; thumbnail?: string|null; normalizedUrl?: string|null }
     }
   })
@@ -256,7 +219,7 @@ export function useEnqueueRender() {
   return useMutation({
     mutationFn: async (clipId: UUID) => {
       const { data } = await api.post(`/v1/clips/enqueue-render`, { clipId })
-      return data as { jobId: UUID }
+      return data as string // jobId
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['project-clips'] })
@@ -400,7 +363,7 @@ export function useConnections() {
 /*==== Player */
 export type AssetResponse = {
   id: string
-  kind: 'CLIP_MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT' | string
+  kind: AssetKind | string
   objectKey: string
   size: number
   createdAt: string
@@ -408,22 +371,24 @@ export type AssetResponse = {
   relatedMediaId?: string | null
 }
 
-export function useLatestClipAsset(clipId?: string, kind: string = 'CLIP_MP4') {
+export function useLatestClipAsset(clipId?: string, kind?: AssetKind, ownerExternalSubject?: string) {
   return useQuery({
-    enabled: !!clipId && !!kind,
-    queryKey: ['latest-asset', clipId, kind],
+    enabled: !!clipId && !!kind && !!ownerExternalSubject,
+    queryKey: ['asset-latest', clipId, kind,ownerExternalSubject],
     queryFn: async () => {
       try {
-        const { data } = await api.get<AssetResponse>(`/v1/assets/latest/clip/${clipId}`, { params: { kind } })
-        return data
-      } catch (e:any){
-        if(e?.response?.status === 404) return null
+        const { data } = await api.get(`/v1/assets/latest/clip/${clipId}`, { params: { kind, ownerExternalSubject }, 
+        })
+        return data as AssetResponse
+      } catch (e: any) {
+        if (e?.response?.status === 404) return null // geen asset (nog)
         throw e
       }
     },
     retry: false,
   })
 }
+
 
 export function useOnScreen<T extends HTMLElement>(rootMargin = '0px') {
   const ref = useRef<T | null>(null)
@@ -442,6 +407,45 @@ export function useOnScreen<T extends HTMLElement>(rootMargin = '0px') {
 
   return { ref, inView }
 }
+// ===== ONE-CLICK ORCHESTRATOR =====
+export type OneClickOpts = {
+  lang?: string;
+  provider?: 'fw' | 'openai';
+  sceneThreshold?: number;
+  topN?: number;
+  enqueueRender?: boolean;
+};
+
+export type OneClickRequest = {
+  ownerExternalSubject: string;
+  url?: string;                  // xor mediaId
+  mediaId?: string;              // xor url
+  title?: string;
+  opts?: OneClickOpts;
+  idempotencyKey: string;        // client generated UUID
+  projectId?: string;            // optional (upload → bestaand project)
+};
+
+export type OneClickResponse = {
+  projectId: string;
+  mediaId: string;
+  createdProject: boolean;
+  detectJob?: { jobId: string; status: string } | null;
+  recommendations?: { requested: number; computed: number } | null;
+  renderJobs?: Array<{ clipId: string; jobId: string; status: string }>;
+  thumbnailSource?: 'YOUTUBE' | 'CLIP' | 'DEFERRED' | 'NONE' | string;
+};
+
+export function useOneClickOrchestrate() {
+  return useMutation({
+    mutationFn: async (body: OneClickRequest) => {
+      const { data } = await api.post<OneClickResponse>('/v1/orchestrate/one-click', body);
+      return data;
+    }
+  });
+}
+
+
 
 // export function useClipPlayback(clipId?: string) {
 //   const enabled = !!clipId

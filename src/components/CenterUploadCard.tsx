@@ -13,8 +13,6 @@ export default function CenterUploadCard({
   onTrySample?: () => void
 }) {
   const [url, setUrl] = useState('')
-  const [autosave, setAutosave] = useState(false)
-  const [autoimport, setAutoimport] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const canSubmit = url.trim().length > 0
 
@@ -22,14 +20,6 @@ export default function CenterUploadCard({
     const v = url.trim()
     if (!v) return
     onStart?.({ type: 'url', value: v })
-  }
-
-  const handleFileChange = (file?: File) => {
-    if (!file) return
-    // Object URL voor preview in de UI (optioneel)
-    const objUrl = URL.createObjectURL(file)
-    onStart?.({ type: 'file', value: objUrl, name: file.name, file })
-    // (optioneel) later: URL.revokeObjectURL(objUrl) na gebruik
   }
 
   return (
@@ -109,27 +99,6 @@ export default function CenterUploadCard({
               Click here to try a sample project
             </a>
           </div>
-        </div>
-
-        {/* Footer toggles */}
-        <div className="flex items-center justify-between text-sm text-muted pt-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autosave}
-              onChange={() => setAutosave(!autosave)}
-            />
-            Auto-save
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoimport}
-              onChange={() => setAutoimport(!autoimport)}
-            />
-            Auto-import (Beta)
-          </label>
-          <div className="badge">Usage 0/7</div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import Player, { PlayerHandle } from '../components/Player'
+import ClipPlayer from '../components/clipPlayer'
+import { PlayerHandle } from '../components/Player'
 import QualityChecklist from '../components/QualityChecklist'
 import { usePatchClip } from '../api/hooks'
 
@@ -17,6 +18,7 @@ function saveTrimLocal(id: string, v: Trim) {
 
 export default function ClipEditor() {
   const { id = '' } = useParams()                 // ← id als string
+  const ownerExternalSubject = localStorage.getItem('ownerExternalSubject') || 'demo-user-1'
   const nav = useNavigate()
   const patchClip = usePatchClip()
 
@@ -104,11 +106,11 @@ export default function ClipEditor() {
           </div>
         </div>
 
-        <Player
+        <ClipPlayer
           ref={playerRef}
-          poster="/src/assets/thumb2.jpg"
+          clipId={id}
           aspect={aspect}
-          src=""                          // ← later echte videobron zetten
+          ownerExternalSubject = {ownerExternalSubject}
           onTime={setCurrentTime}         // ← nodig voor active time + I/O
         />
 

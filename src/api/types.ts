@@ -13,9 +13,10 @@ export type ProjectResponse = {
   ownerId: UUID
   ownerExternalSubject: string
   title: string
+  ownerExternalSubject: string   // <-- toegevoegdd
   createdAt: string
   templateId: UUID | null
-}
+} 
 
 export type ProjectListItem = ProjectResponse & {
   // optioneel als je counters toevoegt:
@@ -47,14 +48,16 @@ export type MetadataResponse = {
 export type ClipResponse = {
   id: UUID
   mediaId: UUID
-  title: string
+  title: string | null
   startMs: number
   endMs: number
-  durationMs: number
-  score?: number | null
-  status: 'SUGGESTED'|'NEEDS_EDIT'|'APPROVED'|'REJECTED'|'RENDERING'|'READY'
+  status: 'QUEUED'|'RENDERING'|'READY'|'FAILED'   // <-- match BE
+  meta?: Record<string, any> | null
+  captionSrtKey?: string | null
+  captionVttKey?: string | null
   thumbUrl?: string | null
-  tags?: string[]
+  mp4url?: string | null
+  createdAt: string
 }
 
 export type TranscriptResponse = {
@@ -63,8 +66,9 @@ export type TranscriptResponse = {
   lang: string
   provider: string
   text?: string
-  words?: { tStart: number; tEnd: number; w: string }[]
+  words?: { schema: string; items: Array<{ startMs:number; endMs:number; text:string }>; [k:string]: any }
   createdAt: string
+  version?: number
 }
 
 export type JobResponse = {
