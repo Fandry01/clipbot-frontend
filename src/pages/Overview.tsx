@@ -37,7 +37,7 @@ export default function Overview() {
 
   const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
-  const showEmpty = !projectsQ.isLoading && projectsQ.isError && projects.length === 0
+  const showEmpty = !projectsQ.isLoading && !projectsQ.isError && projects.length === 0
 
   const [flowOpen, setFlowOpen] = useState(false)
   const [flowStep, setFlowStep] = useState<{ title: string; subtitle?: string; pct?: number } | null>(null)
