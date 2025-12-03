@@ -3,10 +3,13 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+      },
       colors: {
         page: "#000000",
         surface: "#0A0A0A",
-        text: "#E2E8F0",
+        text: "#F9FAFB",
         muted: "#9CA3AF",
         primary: "#FFFFFF",
         ok: "#D1D5DB",

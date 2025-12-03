@@ -1,12 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root { color-scheme: dark; }
-body { background: theme('colors.page'); color: theme('colors.text'); }
+body {
+    @apply bg-page text-text font-sans;
+}
+
 
 .card { @apply bg-surface border border-border rounded-xl shadow-card; }
 .btn { @apply inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition; }
 .btn-primary { @apply btn bg-primary text-black hover:opacity-90; }
-.btn-ghost { @apply btn bg-transparent hover:bg-white/5; }
-.badge { @apply px-2 py-0.5 rounded-full text-xs border border-border bg-white/5; }
+.btn-ghost {
+    @apply btn bg-transparent text-text hover:bg-white/5;
+}
+.badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-border;
+}

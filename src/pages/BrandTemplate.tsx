@@ -139,6 +139,12 @@ export default function BrandTemplate() {
         }
         reader.readAsDataURL(file)
     }
+    const previewContainerClass =
+        layout === '9:16'
+            ? 'aspect-[9/16] w-[260px] sm:w-[320px] lg:w-[360px]'
+            : layout === '16:9'
+                ? 'aspect-[16/9] w-[420px] sm:w-[480px] lg:w-[560px]'
+                : 'aspect-[1/1] w-[320px] sm:w-[360px] lg:w-[380px]'
 
     return (
         <div className="space-y-4">
@@ -169,9 +175,9 @@ export default function BrandTemplate() {
                                 value={layout}
                                 onChange={(v) => setLayout(v as any)}
                                 options={[
-                                    { value: '9:16', label: '9:16 fill fit' },
-                                    { value: '16:9', label: '16:9' },
-                                    { value: '1:1', label: '1:1' },
+                                    {value: '9:16', label: '9:16 fill fit'},
+                                    {value: '16:9', label: '16:9'},
+                                    {value: '1:1', label: '1:1'},
                                 ]}
                             />
                         </Row>
@@ -180,29 +186,29 @@ export default function BrandTemplate() {
                                 value={captionStyle}
                                 onChange={setCaptionStyle}
                                 options={[
-                                    { value: 'one-line', label: 'one-line' },
-                                    { value: 'two-line', label: 'two-lines' },
-                                    { value: 'karaoke', label: 'karaoke' },
+                                    {value: 'one-line', label: 'one-line'},
+                                    {value: 'two-line', label: 'two-lines'},
+                                    {value: 'karaoke', label: 'karaoke'},
                                 ]}
                             />
                         </Row>
                         <Row label="Caption size">
-                            <UiRange value={captionSize} onChange={setCaptionSize} min={28} max={72} />
+                            <UiRange value={captionSize} onChange={setCaptionSize} min={28} max={72}/>
                         </Row>
                         <Row label="Stroke width">
-                            <UiRange value={stroke} onChange={setStroke} min={0} max={8} />
+                            <UiRange value={stroke} onChange={setStroke} min={0} max={8}/>
                         </Row>
                     </Section>
 
                     <Section title="Brand">
                         <Row label="Overlay (logo, CTA)">
-                            <UiSwitch checked={overlay} onChange={setOverlay} />
+                            <UiSwitch checked={overlay} onChange={setOverlay}/>
                         </Row>
                         <Row label="Intro/Outro">
-                            <UiSwitch checked={intro} onChange={setIntro} />
+                            <UiSwitch checked={intro} onChange={setIntro}/>
                         </Row>
                         <Row label="Music">
-                            <UiSwitch checked={music} onChange={setMusic} />
+                            <UiSwitch checked={music} onChange={setMusic}/>
                         </Row>
                         <Row label="Logo">
                             <div className="flex items-center gap-2">
@@ -298,22 +304,22 @@ export default function BrandTemplate() {
                             </div>
 
                             <Row label="Remove filler words">
-                                <UiSwitch checked={removeFiller} onChange={setRemoveFiller} />
+                                <UiSwitch checked={removeFiller} onChange={setRemoveFiller}/>
                             </Row>
                             <Row label="Remove pauses">
-                                <UiSwitch checked={removePauses} onChange={setRemovePauses} />
+                                <UiSwitch checked={removePauses} onChange={setRemovePauses}/>
                             </Row>
                             <Row label="AI keywords highlighter">
-                                <UiSwitch checked={keywordsHL} onChange={setKeywordsHL} />
+                                <UiSwitch checked={keywordsHL} onChange={setKeywordsHL}/>
                             </Row>
                             <Row label="AI emojis">
-                                <UiSwitch checked={aiEmojis} onChange={setAiEmojis} />
+                                <UiSwitch checked={aiEmojis} onChange={setAiEmojis}/>
                             </Row>
                             <Row label="Auto-generate stock B-roll">
-                                <UiSwitch checked={autoBroll} onChange={setAutoBroll} />
+                                <UiSwitch checked={autoBroll} onChange={setAutoBroll}/>
                             </Row>
                             <Row label="Auto transitions">
-                                <UiSwitch checked={autoTransitions} onChange={setAutoTransitions} />
+                                <UiSwitch checked={autoTransitions} onChange={setAutoTransitions}/>
                             </Row>
                         </div>
                     </Section>
@@ -328,17 +334,27 @@ export default function BrandTemplate() {
                             />
                             <button className="btn-primary" onClick={applyToProject}>Apply to project</button>
                         </div>
-                        <div className="text-xs text-muted">Tip: open via <code>?project=1</code> in de URL om dit veld te prefillen.</div>
+                        <div className="text-xs text-muted">Tip: open via <code>?project=1</code> in de URL om dit veld
+                            te prefillen.
+                        </div>
                     </Section>
                 </aside>
 
                 {/* CENTER: preview */}
                 <main className="flex items-start justify-center">
                     <div className="space-y-3">
-                        <div className="relative bg-white/5 rounded-xl overflow-hidden shadow-card
-                                aspect-[9/16] w-[360px] sm:w-[420px] lg:w-[460px]">
-                            <img src="/src/assets/thumb1.jpg" className="w-full h-full object-cover"/>
-                            {overlay &&
+                        <div
+                            className={`
+                                relative bg-white/5 rounded-xl overflow-hidden shadow-card
+                                ${previewContainerClass}
+                              `}
+                            >
+                            <img
+                                src="/src/assets/thumb1.jpg"
+                                className="w-full h-full object-cover"
+                            />
+
+                            {overlay && (
                                 <div className="absolute top-2 left-2 flex items-center gap-2">
                                     {brandLogoDataUrl ? (
                                         <img
@@ -346,15 +362,17 @@ export default function BrandTemplate() {
                                             alt="Brand logo"
                                             className="h-8 w-auto rounded-md bg-black/40 p-1"
                                         />
-                                    ): (
+                                    ) : (
                                         <span
                                             className="badge"
-                                            style={{ backgroundColor: brandPrimaryColor, color: brandSecondaryColor }}
+                                            style={{backgroundColor: brandPrimaryColor, color: brandSecondaryColor}}
                                         >
-                                        Demo
-                                      </span>
+                                      Demo
+                                    </span>
                                     )}
-                                </div>}
+                                </div>
+                            )}
+
                             <div
                                 className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg"
                                 style={{
@@ -372,20 +390,18 @@ export default function BrandTemplate() {
                         </div>
 
                         <div className="text-sm text-muted">
-                            {layout} · {captionStyle} ·size {captionSize}px · stroke {subtitleOutlineWidth}px ·
-                            {overlay ? ' Overlay' : ''}{intro ? ' · Intro/Outro' : ''}{music ? ' · Music' : ''}
-                            {removeFiller ? ' · no fillers' : ''}{removePauses ? ' · no pauses' : ''}
-                            {keywordsHL ? ' · keywords' : ''}{aiEmojis ? ' · emojis' : ''}
-                            {autoBroll ? ' · stock B-roll' : ''}{autoTransitions ? ' · transitions' : ''}
+                            {layout} · {captionStyle} · size {captionSize}px · outline {subtitleOutlineWidth}px ·
+                            {overlay ? ' overlay' : ''}{intro ? ' · intro/outro' : ''}{music ? ' · music' : ''}
                         </div>
                     </div>
                 </main>
+
             </div>
         </div>
     )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({title, children}: { title: string; children: React.ReactNode }) {
     return (
         <div className="space-y-2">
             <div className="text-sm font-medium">{title}</div>
@@ -393,7 +409,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         </div>
     )
 }
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+
+function Row({label, children}: { label: string; children: React.ReactNode }) {
     return (
         <div className="flex items-center gap-3 border border-border rounded-lg p-2">
             <div className="text-sm flex-1">{label}</div>

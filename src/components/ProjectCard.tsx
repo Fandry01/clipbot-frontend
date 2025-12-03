@@ -12,13 +12,31 @@ export type Project = {
 }
 
 function planBadge(plan?: string) {
-  const cls = plan === 'Pro' ? 'badge bg-white text-black' : 'badge'
-  return <span className={cls}>{plan ?? '—'}</span>
+  if (!plan) return <span className="badge">—</span>
+
+  if (plan === 'Pro') {
+    return (
+        <span className="badge bg-purple-500/20 text-purple-200 border-purple-500/40">
+        Pro
+      </span>
+    )
+  }
+
+  if (plan === 'Free') {
+    return (
+        <span className="badge bg-sky-500/20 text-sky-100 border-sky-500/40">
+        Free
+      </span>
+    )
+  }
+
+  // fallback voor andere plans
+  return <span className="badge">{plan}</span>
 }
 
 function statusBadge(status?: string) {
   const map: Record<string, string> = {
-    Ready: 'badge bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    Ready: 'badge bg-lime-400/20 text-lime-200 border-lime-400/60 shadow-[0_0_12px_rgba(190,242,100,0.45)]',
     Rendering: 'badge bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
     Error: 'badge bg-red-500/20 text-red-300 border-red-500/30',
     Demo: 'badge',
