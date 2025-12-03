@@ -12,6 +12,8 @@ import {
     SubtitleFontId,
     getSubtitleFont,
 } from '../subtitles/styles'
+import ExportFlowModal from '../components/ExportFlowModal'
+
 
 // ✅ lokaal trim-type + helpers
 type Trim = { in: number; out: number }
@@ -55,6 +57,8 @@ export default function ClipEditor() {
     const ownerExternalSubject = localStorage.getItem('ownerExternalSubject') || 'demo-user-1'
     const nav = useNavigate()
     const patchClip = usePatchClip()
+    const TOTAL_SECONDS = 180 // TODO: vervangen door echte clip duration
+
 
     const [aspect, setAspect] = useState<'16:9' | '9:16' | '1:1'>('9:16')
     const [tab, setTab] = useState<'trim' | 'sub' | 'brand' | 'export'>('trim')
@@ -78,6 +82,15 @@ export default function ClipEditor() {
 
     const [isExporting, setIsExporting] = useState(false)
     const [lastExportJobId, setLastExportJobId] = useState<string | null>(null)
+    const [showExportModal, setShowExportModal] = useState(false)
+
+    const playerWidthClass =
+        aspect === '9:16'
+            ? 'w-[260px] sm:w-[320px] lg:w-[360px]'              // vertical
+            : aspect === '1:1'
+                ? 'w-[320px] sm:w-[380px] lg:w-[420px]'              // square
+                : 'w-full max-w-4xl'
+
 
     // 🔗 Load actieve brand template uit localStorage
     useEffect(() => {
@@ -238,60 +251,110 @@ export default function ClipEditor() {
                     </div>
                 </div>
 
-                <ClipPlayer
-                    ref={playerRef}
-                    clipId={id}
-                    aspect={aspect}
-                    ownerExternalSubject={ownerExternalSubject}
-                    onTime={setCurrentTime}         // ← nodig voor active time + I/O
-                />
+                <div className="flex justify-center">
+                    <div className={playerWidthClass}>
+                        <ClipPlayer
+                            ref={playerRef}
+                            clipId={id}
+                            aspect={aspect}
+                            ownerExternalSubject={ownerExternalSubject}
+                            onTime={setCurrentTime}
+                        />
+                    </div>
+                </div>
 
                 {/* timeline placeholder (visueel) */}
-                <div className="card p-3">
-                    <div className="text-sm mb-2">Timeline</div>
-                    <div className="h-24 bg-gradient-to-r from-white/10 to-white/5 rounded-lg relative">
-                        {/* current time needle */}
-                        <div
-                            className="absolute top-0 bottom-0 w-0.5 bg-white"
-                            style={{ left: `${Math.min(100, (currentTime / 180) * 100)}%` }}
-                        />
-                        {/* geselecteerde range highlight */}
-                        <div
-                            className="absolute inset-y-0 bg-white/20"
-                            style={{
-                                left: `${(trim.in / 180) * 100}%`,
-                                width: `calc(${(trim.out / 180) * 100}% - ${(trim.in / 180) * 100}%)`,
-                            }}
-                        />
-                        <div className="absolute inset-x-0 bottom-0 text-[10px] text-muted px-2 py-1">
-                            waveform placeholder · Range {fmt(trim.in)}–{fmt(trim.out)} · Now {fmt(currentTime)}
+                {/* timeline */}
+                <div className="card p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium">Timeline</div>
+                        <div className="text-[11px] text-muted">
+                            In {fmt(trim.in)} · Out {fmt(trim.out)} · Now {fmt(currentTime)}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2 text-sm">
-                        <button className="btn-ghost" onClick={() => push({ ...trim, in: Math.max(0, currentTime) })}>
+
+                    <div className="relative h-10 flex items-center">
+                        {/* achtergrond rail */}
+                        <div className="absolute inset-x-0 h-2 bg-white/5 rounded-full overflow-hidden">
+                            {/* volledige duratie als lichte bar */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10"/>
+                            {/* geselecteerde range */}
+                            <div
+                                className="absolute inset-y-0 bg-white/30"
+                                style={{
+                                    left: `${(trim.in / TOTAL_SECONDS) * 100}%`,
+                                    width: `calc(${(trim.out / TOTAL_SECONDS) * 100}% - ${(trim.in / TOTAL_SECONDS) * 100}%)`,
+                                }}
+                            />
+                        </div>
+
+                        {/* current time needle */}
+                        <div
+                            className="absolute top-0 bottom-0 flex flex-col items-center"
+                            style={{left: `${Math.min(100, (currentTime / TOTAL_SECONDS) * 100)}%`}}
+                        >
+                            <div className="h-3 w-px bg-white/60"/>
+                            <div className="h-4 w-px bg-white/30"/>
+                            <div
+                                className="mt-1 px-1.5 py-0.5 rounded-full bg-black/70 border border-border text-[10px]">
+                                {fmt(currentTime)}
+                            </div>
+                        </div>
+
+                        {/* IN marker */}
+                        <div
+                            className="absolute -top-3 flex flex-col items-center"
+                            style={{left: `${(trim.in / TOTAL_SECONDS) * 100}%`}}
+                        >
+                            <div
+                                className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-[10px] text-emerald-200">
+                                IN
+                            </div>
+                            <div className="h-3 w-px bg-emerald-400/70"/>
+                        </div>
+
+                        {/* OUT marker */}
+                        <div
+                            className="absolute -top-3 flex flex-col items-center"
+                            style={{left: `${(trim.out / TOTAL_SECONDS) * 100}%`}}
+                        >
+                            <div
+                                className="px-1.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-[10px] text-rose-200">
+                                OUT
+                            </div>
+                            <div className="h-3 w-px bg-rose-400/70"/>
+                        </div>
+                    </div>
+
+                    {/* onderste controls blijven hetzelfde */}
+                    <div className="flex items-center gap-2 mt-1 text-sm">
+                        <button className="btn-ghost" onClick={() => push({...trim, in: Math.max(0, currentTime)})}>
                             I (Set In)
                         </button>
                         <button
                             className="btn-ghost"
-                            onClick={() => push({ ...trim, out: Math.max(currentTime, trim.in + 0.05) })}
+                            onClick={() => push({...trim, out: Math.max(currentTime, trim.in + 0.05)})}
                         >
                             O (Set Out)
                         </button>
                         <button
                             className="btn-ghost"
-                            onClick={() => push({ in: Math.max(0, trim.in - 0.2), out: trim.out })}
+                            onClick={() => push({in: Math.max(0, trim.in - 0.2), out: trim.out})}
                         >
                             -0.2s In
                         </button>
                         <button
                             className="btn-ghost"
-                            onClick={() => push({ in: trim.in, out: trim.out + 0.2 })}
+                            onClick={() => push({in: trim.in, out: trim.out + 0.2})}
                         >
                             +0.2s Out
                         </button>
-                        <div className="ml-auto text-muted">Use J/K/L, arrows, Alt/Shift</div>
+                        <div className="ml-auto text-muted text-xs">
+                            Range {fmt(trim.in)}–{fmt(trim.out)} · est. total {fmt(TOTAL_SECONDS)}
+                        </div>
                     </div>
                 </div>
+
 
                 {/* tabs */}
                 <div className="card p-3">
@@ -311,7 +374,8 @@ export default function ClipEditor() {
 
                     {tab === 'trim' && (
                         <div className="text-sm text-muted">
-                            Set in/out met I/O, pijltjes voor seek (Alt = fijn, Shift = grof). Save = PATCH naar backend.
+                            Set in/out met I/O, pijltjes voor seek (Alt = fijn, Shift = grof). Save = PATCH naar
+                            backend.
                         </div>
                     )}
 
@@ -353,7 +417,8 @@ export default function ClipEditor() {
                                     <div className="text-[11px] text-muted">{subtitlePreset.description}</div>
                                 )}
                                 <div className="mt-1 text-[11px] text-muted">
-                                    {effectiveSubtitleStyle.fontFamily} · {effectiveSubtitleStyle.fontSize}px · align{' '}
+                                    {effectiveSubtitleStyle.fontFamily} · {effectiveSubtitleStyle.fontSize}px ·
+                                    align{' '}
                                     {effectiveSubtitleStyle.alignment} · outline {effectiveSubtitleStyle.outline}px
                                 </div>
                                 {/* simpele “preview” tekst */}
@@ -387,12 +452,12 @@ export default function ClipEditor() {
                                         <span className="text-xs">Primary:</span>
                                         <span
                                             className="inline-block h-4 w-4 rounded border border-border"
-                                            style={{ backgroundColor: brandTpl.brandPrimaryColor || '#FFB020' }}
+                                            style={{backgroundColor: brandTpl.brandPrimaryColor || '#FFB020'}}
                                         />
                                         <span className="text-xs">Secondary:</span>
                                         <span
                                             className="inline-block h-4 w-4 rounded border border-border"
-                                            style={{ backgroundColor: brandTpl.brandSecondaryColor || '#FFFFFF' }}
+                                            style={{backgroundColor: brandTpl.brandSecondaryColor || '#FFFFFF'}}
                                         />
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -417,7 +482,8 @@ export default function ClipEditor() {
                                         Geen actieve brand template gevonden. Stel er één in bij Brand settings.
                                     </div>
                                     <div>Logo: <span className="badge">upload in Brand</span></div>
-                                    <div>Colors: <span className="badge">primary</span> <span className="badge">secondary</span></div>
+                                    <div>Colors: <span className="badge">primary</span> <span
+                                        className="badge">secondary</span></div>
                                     <div>Font: <span className="badge">preset font</span></div>
                                 </>
                             )}
@@ -428,9 +494,9 @@ export default function ClipEditor() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Preset</span>
-                                <button className="btn-ghost" onClick={() => setAspect('9:16')}>TikTok (9:16)</button>
-                                <button className="btn-ghost" onClick={() => setAspect('16:9')}>YouTube (16:9)</button>
-                                <button className="btn-ghost" onClick={() => setAspect('1:1')}>Square (1:1)</button>
+                                <button className="btn-ghost">TikTok (9:16)</button>
+                                <button className="btn-ghost">YouTube (16:9)</button>
+                                <button className="btn-ghost">Square (1:1)</button>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Resolution</span>
@@ -440,23 +506,25 @@ export default function ClipEditor() {
                                 </select>
                             </div>
                             <div className="text-xs text-muted">
-                                Export gebruikt: <span className="font-medium">{subtitlePreset.label}</span> subtitle style
-                                {brandTpl ? ' + actieve brand template.' : '.'}
+                                Export gebruikt: <span className="font-medium">{subtitlePreset.label}</span> subtitle
+                                style.
                             </div>
+
                             <button
                                 className="btn-primary mt-2"
-                                onClick={handleExport}
-                                disabled={isExporting}
+                                onClick={() => setShowExportModal(true)}
                             >
-                                {isExporting ? 'Exporting…' : 'Export with current subtitle style'}
+                                Export options…
                             </button>
+
                             {lastExportJobId && (
                                 <div className="text-[11px] text-muted mt-1">
-                                    Job ID: {lastExportJobId}
+                                    Laatste export job ID: {lastExportJobId}
                                 </div>
                             )}
                         </div>
                     )}
+
                 </div>
             </div>
 
@@ -478,6 +546,18 @@ export default function ClipEditor() {
                 </div>
                 <QualityChecklist qc={qc} />
             </div>
+            <ExportFlowModal
+                open={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                onExportDownload={async () => {
+                    await handleExport()
+                    // optioneel: modal sluiten na start
+                    // setShowExportModal(false)
+                }}
+                isExporting={isExporting}
+                subtitleStyle={effectiveSubtitleStyle}
+                aspect={aspect}
+            />
         </div>
     )
 }
