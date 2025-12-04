@@ -51,34 +51,26 @@ const Player = forwardRef<PlayerHandle, Props>(function Player(
     },
   }), [])
 
-  // ✅ startAt toepassen zodra metadata er is, en bij prop-wijziging
-useEffect(() => {
-  const v = videoRef.current
-  if (!v || !src) return
-  if (!src.endsWith('.m3u8')) return            // ← MP4 niet via effect doen
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !src) return
 
-  const canNative = v.canPlayType('application/vnd.apple.mpegURL')
-  if (canNative) { v.src = src; return }
-
-  let hls: any, aborted = false
-  ;(async () => {
-    try {
-      const mod = await import('hls.js')
-      if (aborted) return
-      const Hls = mod.default
-      if (Hls.isSupported()) {
-        hls = new Hls({ enableWorker: true })
-        hls.loadSource(src)
-        hls.attachMedia(v)
-      } else {
-        v.src = src
+    const applyStartAt = () => {
+      if (typeof startAt === 'number' && Number.isFinite(startAt)) {
+        v.currentTime = Math.max(0, startAt)
       }
-    } catch {
-      v.src = src
     }
-  })()
-  return () => { aborted = true; if (hls) { try { hls.destroy() } catch {} } }
-}, [src])
+
+    v.src = src
+
+    if (v.readyState >= 1) {
+      applyStartAt()
+    } else {
+      v.addEventListener('loadedmetadata', applyStartAt, { once: true })
+    }
+
+    return () => v.removeEventListener('loadedmetadata', applyStartAt)
+  }, [src, startAt])
 
   // Keyboard J/K/L
   useEffect(() => {
@@ -103,37 +95,6 @@ useEffect(() => {
     v.addEventListener('loadedmetadata', meta)
     return () => { v.removeEventListener('timeupdate', tick); v.removeEventListener('loadedmetadata', meta) }
   }, [onTime, src])
-
-  // HLS (.m3u8) support via hls.js (lazy)
-  useEffect(() => {
-    const v = videoRef.current
-    if (!v || !src) return
-    if (!src.endsWith('.m3u8')) { v.src = src; return }
-
-    const canNative = v.canPlayType('application/vnd.apple.mpegURL') // Safari/IOS
-    if (canNative) { v.src = src; return }
-
-    let hls: any
-    let aborted = false
-    ;(async () => {
-      try {
-        const mod = await import('hls.js') // npm i hls.js
-        if (aborted) return
-        const Hls = mod.default
-        if (Hls.isSupported()) {
-          hls = new Hls({ enableWorker: true })
-          hls.loadSource(src)
-          hls.attachMedia(v)
-        } else {
-          // fallback: laat browser het proberen
-          v.src = src
-        }
-      } catch {
-        v.src = src
-      }
-    })()
-    return () => { aborted = true; if (hls) { try { hls.destroy() } catch {} } }
-  }, [src])
 
   const aspectClass =
     aspect === '9:16' ? 'aspect-[9/16]' : aspect === '1:1' ? 'aspect-square' : 'aspect-video'
