@@ -1,0 +1,164 @@
+import * as React from "react"
+import { Button } from "@/components/ui/button"
+
+const navLinks = [
+  { label: "Product", href: "#" },
+  { label: "Pricing", href: "#" },
+  { label: "Docs", href: "#" },
+]
+
+const stats = [
+  "Save hours every week",
+  "Clips start and end naturally",
+  "Ready for TikTok, Reels, Shorts, LinkedIn",
+]
+
+const clipCards = [
+  {
+    title: "Hook: Why your podcast isn’t growing",
+    duration: "0:42",
+    tags: ["Story mode", "Auto clips"],
+  },
+  {
+    title: "Context: Nail your unique POV",
+    duration: "1:05",
+    tags: ["Brand overlay", "Captions"],
+  },
+  {
+    title: "Payoff: Turn viewers into fans",
+    duration: "0:54",
+    tags: ["TikTok", "Reels", "YouTube Shorts"],
+  },
+]
+
+function LandingHero() {
+  return (
+    <div className="bg-white text-slate-900">
+      <header className="border-b border-slate-200">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-bold tracking-tight">ClipBot</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              AI Video Clipping
+            </span>
+          </div>
+          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
+            {navLinks.map((link) => (
+              <a key={link.label} href={link.href} className="transition hover:text-slate-900">
+                {link.label}
+              </a>
+            ))}
+          </nav>
+          <div className="hidden items-center gap-4 md:flex">
+            <button className="text-sm font-semibold text-slate-700 transition hover:text-slate-900">
+              Log in
+            </button>
+            <Button size="md" className="shadow-sm">
+              Start free trial
+            </Button>
+          </div>
+          <div className="flex items-center gap-3 md:hidden">
+            <Button size="sm" variant="outline" className="border-slate-200 text-slate-800">
+              Menu
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto flex min-h-[calc(100vh-76px)] max-w-6xl flex-col gap-12 px-6 py-14 md:flex-row md:items-center md:py-20 lg:py-24">
+        <section className="flex-1 space-y-8 md:space-y-10">
+          <div className="space-y-4 text-center md:text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Clip smarter, share faster</p>
+            <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+              Turn long videos into scroll-stopping clips
+            </h1>
+            <p className="text-lg leading-relaxed text-slate-600 md:max-w-xl">
+              ClipBot finds the real story inside your podcasts, webinars, and streams. Create context-aware hooks,
+              smooth endings, and branded subtitles, then schedule clips to TikTok, Reels, YouTube, and LinkedIn in minutes.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-center md:justify-start">
+            <Button size="lg">Start free trial</Button>
+            <Button size="lg" variant="outline" className="sm:w-auto">
+              Watch product demo
+            </Button>
+          </div>
+          <p className="text-sm font-medium text-slate-600 md:ml-0 md:text-left md:max-w-none text-center">
+            No watermarks on paid plans · Cancel anytime
+          </p>
+          <div className="flex flex-col gap-3 text-sm text-slate-700 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:justify-center md:justify-start">
+            {stats.map((item) => (
+              <div key={item} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="font-semibold text-slate-700">{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="flex-1">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-lg">
+            <div className="absolute right-4 top-4 rounded-full bg-white px-4 py-2 text-xs font-semibold text-green-600 shadow-sm">
+              Story mode enabled
+            </div>
+            <div className="space-y-6 p-6">
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-24 rounded-lg bg-gradient-to-br from-indigo-200 via-indigo-100 to-slate-100" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-24 rounded-full bg-slate-200" />
+                    <div className="h-3 w-32 rounded-full bg-slate-200" />
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      <span className="text-xs font-semibold text-slate-600">Ready to clip</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
+                  <div className="flex h-full w-full gap-1 overflow-hidden rounded-full">
+                    <span className="flex-1 bg-indigo-500" />
+                    <span className="w-8 bg-indigo-300" />
+                    <span className="flex-1 bg-indigo-400" />
+                    <span className="w-10 bg-indigo-500" />
+                    <span className="flex-1 bg-indigo-300" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {clipCards.map((clip) => (
+                  <div
+                    key={clip.title}
+                    className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{clip.title}</p>
+                        <p className="text-xs text-slate-500">Hook → Context → Payoff</p>
+                      </div>
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                        {clip.duration}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {clip.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}
+
+export default LandingHero
