@@ -11,7 +11,6 @@ export type Page<T> = {
 export type ProjectResponse = {
   id: UUID
   ownerId: UUID
-  ownerExternalSubject: string
   title: string
   ownerExternalSubject: string   // <-- toegevoegdd
   createdAt: string
