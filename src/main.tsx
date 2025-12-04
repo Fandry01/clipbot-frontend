@@ -15,6 +15,7 @@ import ProjectClips from './pages/ProjectClips'
 import MediaDetail from './pages/MediaDetail'
 import ClipEditor from './pages/ClipEditor'
 import BrandTemplate from './pages/BrandTemplate'
+import LandingPage from './pages/LandingPage'
 import './styles.css'
 import MeSettings from "./pages/MeSettings";
 
@@ -24,6 +25,10 @@ if (!localStorage.getItem('ownerId')) {
 }
 
 const router = createBrowserRouter([
+  {
+    path: '/landing',
+    element: <LandingPage />,
+  },
   {
     path: '/',
     element: <Root />,
