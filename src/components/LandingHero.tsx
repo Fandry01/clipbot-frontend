@@ -99,10 +99,10 @@ function LandingHero() {
         </div>
       </header>
 
-      <main className="relative overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-white pt-32 md:pt-36">
+      <main className="relative overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-white pt-24 md:pt-28">
         <div className="absolute left-1/2 top-10 h-48 w-48 -translate-x-1/2 rounded-full bg-indigo-200/30 blur-3xl" />
         <div className="absolute right-12 top-24 h-32 w-32 rounded-full bg-green-200/30 blur-3xl" />
-        <div className="relative mx-auto flex min-h-[calc(100vh-76px)] max-w-5xl flex-col items-center gap-12 px-6 py-16 text-center md:py-24">
+        <div className="relative mx-auto flex min-h-[calc(100vh-76px)] max-w-5xl flex-col items-center gap-10 px-6 py-12 text-center md:py-16">
           <div className="space-y-4">
             <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 shadow-sm ring-1 ring-indigo-100">
               Clip smarter, share faster
