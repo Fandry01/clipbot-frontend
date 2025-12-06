@@ -32,6 +32,12 @@ const clipCards = [
 ]
 
 function LandingHero() {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   return (
     <div className="bg-white text-slate-900">
       <header className="border-b border-slate-200">
@@ -68,38 +74,40 @@ function LandingHero() {
       <main className="relative overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-white">
         <div className="absolute left-1/2 top-10 h-48 w-48 -translate-x-1/2 rounded-full bg-indigo-200/30 blur-3xl" />
         <div className="absolute right-12 top-24 h-32 w-32 rounded-full bg-green-200/30 blur-3xl" />
-        <div className="relative mx-auto grid min-h-[calc(100vh-76px)] max-w-6xl grid-cols-1 gap-12 px-6 py-16 text-center md:grid-cols-2 md:items-center md:py-24">
-          <section className="flex flex-1 flex-col items-center gap-8 md:gap-10 md:text-center">
-            <div className="space-y-4 max-w-3xl">
-              <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 shadow-sm ring-1 ring-indigo-100">
-                Clip smarter, share faster
-              </p>
-              <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-                Turn long videos into scroll-stopping clips
-              </h1>
-              <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600">
-                ClipBot crafts story-driven moments with natural starts and endings, branded overlays, and ready-to-post exports for TikTok, Reels, Shorts, and LinkedIn.
-              </p>
-            </div>
-            <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
-              <Button size="lg" className="w-full sm:w-auto">Start free trial</Button>
-              <Button size="lg" variant="outline" className="w-full border-slate-200 sm:w-auto">
-                Watch product demo
-              </Button>
-            </div>
-            <p className="text-sm font-medium text-slate-600">No watermarks on paid plans · Cancel anytime</p>
-            <div className="flex flex-wrap justify-center gap-3 text-sm text-slate-700">
-              {stats.map((item) => (
-                <div key={item} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 shadow-sm">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="font-semibold text-slate-700">{item}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+        <div className="relative mx-auto flex min-h-[calc(100vh-76px)] max-w-5xl flex-col items-center gap-12 px-6 py-16 text-center md:py-24">
+          <div className="space-y-4">
+            <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 shadow-sm ring-1 ring-indigo-100">
+              Clip smarter, share faster
+            </p>
+            <h1
+              className={`text-4xl font-bold leading-tight tracking-tight text-slate-900 transition-all duration-700 ease-out sm:text-5xl lg:text-6xl ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              Turn long videos into scroll-stopping clips
+            </h1>
+            <p
+              className={`mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 transition-all duration-700 ease-out delay-100 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              ClipBot crafts story-driven moments with natural starts and endings, branded overlays, and ready-to-post exports for TikTok, Reels, Shorts, and LinkedIn.
+            </p>
+          </div>
+          <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
+            <Button size="lg" className="w-full sm:w-auto">Start free trial</Button>
+            <Button size="lg" variant="outline" className="w-full border-slate-200 sm:w-auto">
+              Watch product demo
+            </Button>
+          </div>
+          <p className="text-sm font-medium text-slate-600">No watermarks on paid plans · Cancel anytime</p>
+          <div className="flex flex-wrap justify-center gap-3 text-sm text-slate-700">
+            {stats.map((item) => (
+              <div key={item} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="font-semibold text-slate-700">{item}</span>
+              </div>
+            ))}
+          </div>
 
-          <section className="flex flex-1 items-center justify-center">
-            <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-xl">
+          <section className="flex w-full items-center justify-center">
+            <div className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-xl">
               <div className="absolute left-6 top-6 rounded-full bg-white px-4 py-2 text-xs font-semibold text-green-600 shadow-sm">
                 Story mode enabled
               </div>
