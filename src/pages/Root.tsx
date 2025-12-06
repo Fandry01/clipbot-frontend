@@ -25,17 +25,15 @@ export default function Root() {
     <div className="flex min-h-screen bg-page">
       <aside className="group/sidebar sticky left-0 top-0 z-20 h-screen w-[82px] overflow-hidden border-r border-white/10 bg-black/30 backdrop-blur-xl transition-[width] duration-300 hover:w-[300px]">
         <div className="flex h-full flex-col gap-6 px-4 py-6">
-          <div className="flex items-center justify-between rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_15px_60px_rgba(0,0,0,0.35)]">
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-2 shadow-[0_15px_60px_rgba(0,0,0,0.35)]">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-white/80 to-white/20 text-lg font-semibold text-gray-900 shadow-lg">
-                CB
-              </div>
+              <div className="text-base font-semibold uppercase tracking-[0.06em] text-white">CB</div>
               <div className="hidden group-hover/sidebar:block">
                 <div className="text-xs uppercase tracking-[0.16em] text-white/60">Main</div>
                 <div className="text-base font-semibold text-white">ClipBot</div>
               </div>
             </div>
-            <div className="hidden h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300 group-hover/sidebar:flex">
+            <div className="hidden h-8 w-8 items-center justify-center text-emerald-300 group-hover/sidebar:flex">
               <Bell className="h-5 w-5" />
             </div>
           </div>
@@ -61,13 +59,7 @@ export default function Root() {
                     }`}
                     aria-label={link.label}
                   >
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm ${
-                        isActive
-                          ? 'border-white/40 bg-white/20 text-white'
-                          : 'border-white/10 bg-white/5 text-white/70 group-hover/item:border-white/30'
-                      }`}
-                    >
+                    <span className={`flex items-center justify-center text-sm ${isActive ? 'text-white' : 'text-white/70 group-hover/item:text-white'}`}>
                       <Icon className="h-5 w-5" />
                     </span>
                     <div className="hidden min-w-0 flex-1 flex-col group-hover/sidebar:flex">
@@ -101,13 +93,7 @@ export default function Root() {
                     }`}
                     aria-label={link.label}
                   >
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm ${
-                        isActive
-                          ? 'border-white/40 bg-white/20 text-white'
-                          : 'border-white/10 bg-white/5 text-white/70 group-hover/item:border-white/30'
-                      }`}
-                    >
+                    <span className={`flex items-center justify-center text-sm ${isActive ? 'text-white' : 'text-white/70 group-hover/item:text-white'}`}>
                       <Icon className="h-5 w-5" />
                     </span>
                     <div className="hidden min-w-0 flex-1 flex-col group-hover/sidebar:flex">
@@ -140,9 +126,7 @@ export default function Root() {
             </button>
 
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70">
-                <span className="text-sm font-semibold">NS</span>
-              </div>
+              <div className="text-sm font-semibold text-white">NS</div>
               <div className="hidden flex-col text-sm group-hover/sidebar:flex">
                 <span className="text-white">Nadine Schneider</span>
                 <span className="text-white/60">Admin · Clipbot</span>
