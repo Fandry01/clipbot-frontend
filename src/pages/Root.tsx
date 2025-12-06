@@ -1,12 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import {
-  LayoutDashboard,
-  BookOpen,
-  UploadCloud,
-  Palette,
-  Settings,
-  Bell,
-} from 'lucide-react'
+import { LayoutDashboard, BookOpen, UploadCloud, Palette, Settings, Bell } from 'lucide-react'
 
 const mainLinks = [
   { label: 'Dashboard', path: '/dashboard/overview', icon: LayoutDashboard },
@@ -28,9 +21,6 @@ export default function Root() {
             <div className="hidden flex-1 flex-col leading-tight group-hover/sidebar:flex">
               <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">Main</span>
               <span className="text-sm font-semibold text-white">ClipBot</span>
-            </div>
-            <div className="hidden text-emerald-300 group-hover/sidebar:block">
-              <Bell className="h-5 w-5" />
             </div>
           </div>
 
@@ -118,7 +108,25 @@ export default function Root() {
       </aside>
 
       <div className="ml-16 flex min-h-screen flex-1 flex-col px-6 py-8 transition-[margin] duration-300 group-hover/sidebar:ml-64">
-        <main className="pb-12">
+        <header className="pointer-events-none fixed right-6 top-4 z-30">
+          <div className="pointer-events-auto flex items-center gap-4 rounded-full bg-black/70 px-4 py-2 text-white shadow-lg ring-1 ring-white/10 backdrop-blur">
+            <button
+              type="button"
+              aria-label="Notifications"
+              className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10"
+            >
+              <Bell className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="text-white/70">Credits:</span>
+              <span className="text-white">90</span>
+            </div>
+            <button className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-900 transition hover:bg-white/90">
+              Add more credits
+            </button>
+          </div>
+        </header>
+        <main className="pb-12 pt-12">
           <Outlet />
         </main>
       </div>
