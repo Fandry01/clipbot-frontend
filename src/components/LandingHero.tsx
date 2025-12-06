@@ -13,8 +13,6 @@ const featurePills = [
   { label: "Dubbing", icon: "🎙" },
   { label: "Text to Video AI", icon: "✎" },
   { label: "AI Clips", icon: "⚡" },
-  { label: "AI Avatars", icon: "👤" },
-  { label: "Recorder", icon: "⏺" },
 ]
 
 const clipCards = [
@@ -142,7 +140,7 @@ function LandingHero() {
             {featurePills.map((item, index) => (
               <div
                 key={item.label}
-                className={`flex items-center gap-2 rounded-full border px-3 py-2 shadow-sm transition ${
+                className={`flex items-center gap-2 rounded-full border px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md ${
                   index === 0
                     ? "border-blue-200 bg-white/90 ring-1 ring-blue-100"
                     : "border-slate-200 bg-slate-50"
