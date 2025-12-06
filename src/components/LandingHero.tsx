@@ -65,97 +65,100 @@ function LandingHero() {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-76px)] max-w-6xl flex-col gap-12 px-6 py-14 md:flex-row md:items-center md:py-20 lg:py-24">
-        <section className="flex-1 space-y-8 md:space-y-10">
-          <div className="space-y-4 text-center md:text-left">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Clip smarter, share faster</p>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Turn long videos into scroll-stopping clips
-            </h1>
-            <p className="text-lg leading-relaxed text-slate-600 md:max-w-xl">
-              ClipBot finds the real story inside your podcasts, webinars, and streams. Create context-aware hooks,
-              smooth endings, and branded subtitles, then schedule clips to TikTok, Reels, YouTube, and LinkedIn in minutes.
-            </p>
-          </div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:justify-center md:justify-start">
-            <Button size="lg">Start free trial</Button>
-            <Button size="lg" variant="outline" className="sm:w-auto">
-              Watch product demo
-            </Button>
-          </div>
-          <p className="text-sm font-medium text-slate-600 md:ml-0 md:text-left md:max-w-none text-center">
-            No watermarks on paid plans · Cancel anytime
-          </p>
-          <div className="flex flex-col gap-3 text-sm text-slate-700 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:justify-center md:justify-start">
-            {stats.map((item) => (
-              <div key={item} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="font-semibold text-slate-700">{item}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="flex-1">
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-lg">
-            <div className="absolute right-4 top-4 rounded-full bg-white px-4 py-2 text-xs font-semibold text-green-600 shadow-sm">
-              Story mode enabled
+      <main className="relative overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-white">
+        <div className="absolute left-1/2 top-10 h-48 w-48 -translate-x-1/2 rounded-full bg-indigo-200/30 blur-3xl" />
+        <div className="absolute right-12 top-24 h-32 w-32 rounded-full bg-green-200/30 blur-3xl" />
+        <div className="relative mx-auto grid min-h-[calc(100vh-76px)] max-w-6xl grid-cols-1 gap-12 px-6 py-16 text-center md:grid-cols-2 md:items-center md:py-24">
+          <section className="flex flex-1 flex-col items-center gap-8 md:gap-10 md:text-center">
+            <div className="space-y-4 max-w-3xl">
+              <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 shadow-sm ring-1 ring-indigo-100">
+                Clip smarter, share faster
+              </p>
+              <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+                Turn long videos into scroll-stopping clips
+              </h1>
+              <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600">
+                ClipBot crafts story-driven moments with natural starts and endings, branded overlays, and ready-to-post exports for TikTok, Reels, Shorts, and LinkedIn.
+              </p>
             </div>
-            <div className="space-y-6 p-6">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-24 rounded-lg bg-gradient-to-br from-indigo-200 via-indigo-100 to-slate-100" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-24 rounded-full bg-slate-200" />
-                    <div className="h-3 w-32 rounded-full bg-slate-200" />
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-xs font-semibold text-slate-600">Ready to clip</span>
-                    </div>
-                  </div>
+            <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
+              <Button size="lg" className="w-full sm:w-auto">Start free trial</Button>
+              <Button size="lg" variant="outline" className="w-full border-slate-200 sm:w-auto">
+                Watch product demo
+              </Button>
+            </div>
+            <p className="text-sm font-medium text-slate-600">No watermarks on paid plans · Cancel anytime</p>
+            <div className="flex flex-wrap justify-center gap-3 text-sm text-slate-700">
+              {stats.map((item) => (
+                <div key={item} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 shadow-sm">
+                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  <span className="font-semibold text-slate-700">{item}</span>
                 </div>
-                <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
-                  <div className="flex h-full w-full gap-1 overflow-hidden rounded-full">
-                    <span className="flex-1 bg-indigo-500" />
-                    <span className="w-8 bg-indigo-300" />
-                    <span className="flex-1 bg-indigo-400" />
-                    <span className="w-10 bg-indigo-500" />
-                    <span className="flex-1 bg-indigo-300" />
-                  </div>
-                </div>
-              </div>
+              ))}
+            </div>
+          </section>
 
-              <div className="space-y-3">
-                {clipCards.map((clip) => (
-                  <div
-                    key={clip.title}
-                    className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{clip.title}</p>
-                        <p className="text-xs text-slate-500">Hook → Context → Payoff</p>
+          <section className="flex flex-1 items-center justify-center">
+            <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-xl">
+              <div className="absolute left-6 top-6 rounded-full bg-white px-4 py-2 text-xs font-semibold text-green-600 shadow-sm">
+                Story mode enabled
+              </div>
+              <div className="space-y-6 p-6">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-24 rounded-lg bg-gradient-to-br from-indigo-200 via-indigo-100 to-slate-100" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-24 rounded-full bg-slate-200" />
+                      <div className="h-3 w-32 rounded-full bg-slate-200" />
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500" />
+                        <span className="text-xs font-semibold text-slate-600">Ready to clip</span>
                       </div>
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-                        {clip.duration}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {clip.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
-                        >
-                          {tag}
-                        </span>
-                      ))}
                     </div>
                   </div>
-                ))}
+                  <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
+                    <div className="flex h-full w-full gap-1 overflow-hidden rounded-full">
+                      <span className="flex-1 bg-indigo-500" />
+                      <span className="w-8 bg-indigo-300" />
+                      <span className="flex-1 bg-indigo-400" />
+                      <span className="w-10 bg-indigo-500" />
+                      <span className="flex-1 bg-indigo-300" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {clipCards.map((clip) => (
+                    <div
+                      key={clip.title}
+                      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{clip.title}</p>
+                          <p className="text-xs text-slate-500">Hook → Context → Payoff</p>
+                        </div>
+                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                          {clip.duration}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap justify-start gap-2">
+                        {clip.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
   )
