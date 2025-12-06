@@ -6,8 +6,6 @@ import {
   Palette,
   Settings,
   LifeBuoy,
-  SunMedium,
-  Moon,
   Bell,
   CreditCard,
 } from 'lucide-react'
@@ -123,48 +121,23 @@ export default function Root() {
           </div>
 
           <div className="mt-auto space-y-4">
-            <div className="hidden grid-cols-2 gap-3 group-hover/sidebar:grid">
-              <button className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/10">
-                <SunMedium className="h-4 w-4" />
-                Light
-              </button>
-              <button className="flex items-center gap-2 rounded-full border border-white/10 bg-white/20 px-3 py-2 text-sm font-semibold text-gray-900 shadow-inner transition hover:border-white/20">
-                <Moon className="h-4 w-4" />
-                Dark
-              </button>
-            </div>
-
-            <div className="hidden rounded-[24px] border border-white/10 bg-white/5 p-4 group-hover/sidebar:block">
-              <div className="flex items-center justify-between text-sm text-white/60">
-                <span>Credits</span>
-                <button className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100 hover:bg-emerald-400/20">
-                  <CreditCard className="h-4 w-4" />
-                  Add
-                </button>
-              </div>
-              <div className="mt-3 flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3 text-sm">
-                <div className="space-y-1">
-                  <div className="text-xs uppercase tracking-[0.16em] text-white/50">Available</div>
-                  <div className="text-xl font-semibold text-white">90</div>
-                </div>
-                <div className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-100">In credit</div>
-              </div>
-            </div>
-
-            <div className="hidden items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm group-hover/sidebar:flex">
+            <div className="hidden flex-col gap-3 text-sm text-white/70 group-hover/sidebar:flex">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80">
-                  <LifeBuoy className="h-5 w-5" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-white">Need help?</span>
-                  <span className="text-xs text-white/60">We are here to support you</span>
+                <CreditCard className="h-5 w-5 text-emerald-200" />
+                <div className="leading-tight">
+                  <div className="text-white">Credits available</div>
+                  <div className="text-white/60">90</div>
                 </div>
               </div>
-              <button className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-900 shadow transition hover:translate-y-0.5">
-                Chat
+              <button className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-white/40">
+                Add credits
               </button>
             </div>
+
+            <button className="hidden items-center gap-2 text-sm font-semibold text-white/80 transition hover:text-white group-hover/sidebar:flex">
+              <LifeBuoy className="h-5 w-5" />
+              <span className="underline decoration-dotted underline-offset-4">Need help? Hover for support</span>
+            </button>
 
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70">
