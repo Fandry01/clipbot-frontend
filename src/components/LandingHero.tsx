@@ -109,10 +109,15 @@ function LandingHero() {
               ClipBot crafts story-driven moments with natural starts and endings, branded overlays, and ready-to-post exports for TikTok, Reels, Shorts, and LinkedIn.
             </p>
           </div>
-          <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
-            <Button size="lg" className="w-full sm:w-auto">Start free trial</Button>
-            <Button size="lg" variant="outline" className="w-full border-slate-200 sm:w-auto">
-              Watch product demo
+          <div className="flex w-full flex-col items-center justify-center gap-4">
+            <Button
+              size="lg"
+              className="group flex w-full max-w-xs items-center justify-center gap-2 rounded-full shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              Start free trial
+              <span className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/40 text-base text-white transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </Button>
           </div>
           <p className="text-sm font-medium text-slate-600">No watermarks on paid plans · Cancel anytime</p>
