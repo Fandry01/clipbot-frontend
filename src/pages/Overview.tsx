@@ -17,6 +17,7 @@ import {
 } from '../api/hooks'
 import ProjectCardSkeleton from '../components/ProjectCardSkeleton'
 import { useToast } from '../components/Toast'
+import ClipDistributionBeams from '../components/ClipDistributionBeams'
 
 const externalSubject =
     localStorage.getItem('externalSubject') || 'demo-user-1'
@@ -53,6 +54,7 @@ export default function Overview() {
             <>
               <CenterUploadCard onStart={(src) => setSource(src)} />
               <QuickActionsRail />
+              <ClipDistributionBeams className="mt-6" />
               <div className="flex justify-end mt-4">
                 <StorageChips />
               </div>
