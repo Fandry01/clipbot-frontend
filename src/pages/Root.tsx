@@ -5,9 +5,7 @@ import {
   UploadCloud,
   Palette,
   Settings,
-  LifeBuoy,
   Bell,
-  CreditCard,
 } from 'lucide-react'
 
 const mainLinks = [
@@ -23,27 +21,21 @@ export default function Root() {
   const { pathname } = useLocation()
   return (
     <div className="flex min-h-screen bg-page">
-      <aside className="group/sidebar sticky left-0 top-0 z-20 h-screen w-[82px] overflow-hidden border-r border-white/10 bg-black/30 backdrop-blur-xl transition-[width] duration-300 hover:w-[300px]">
-        <div className="flex h-full flex-col gap-6 px-4 py-6">
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-2 shadow-[0_15px_60px_rgba(0,0,0,0.35)]">
-            <div className="flex items-center gap-3">
-              <div className="text-base font-semibold uppercase tracking-[0.06em] text-white">CB</div>
-              <div className="hidden group-hover/sidebar:block">
-                <div className="text-xs uppercase tracking-[0.16em] text-white/60">Main</div>
-                <div className="text-base font-semibold text-white">ClipBot</div>
-              </div>
+      <aside className="group/sidebar sticky left-0 top-0 z-20 h-screen w-16 shrink-0 overflow-hidden border-r border-white/10 bg-black/30 px-2 py-6 backdrop-blur-xl transition-[width] duration-300 hover:w-64">
+        <div className="flex h-full flex-col items-center gap-6">
+          <div className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-white/70 transition hover:bg-white/10 hover:text-white">
+            <div className="text-base font-semibold uppercase tracking-[0.08em] text-white">CB</div>
+            <div className="hidden flex-1 flex-col leading-tight group-hover/sidebar:flex">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">Main</span>
+              <span className="text-sm font-semibold text-white">ClipBot</span>
             </div>
-            <div className="hidden h-8 w-8 items-center justify-center text-emerald-300 group-hover/sidebar:flex">
+            <div className="hidden text-emerald-300 group-hover/sidebar:block">
               <Bell className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="hidden items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 group-hover/sidebar:flex">
-              <span className="h-px flex-1 bg-white/10" />
-              Main
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
+          <div className="w-full space-y-3">
+            <div className="flex items-center gap-2 px-2 text-[10px] uppercase tracking-[0.35em] text-white/40">Main</div>
             <nav className="space-y-2">
               {mainLinks.map((link) => {
                 const isActive = pathname.startsWith(link.path)
@@ -52,32 +44,29 @@ export default function Root() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`group/item relative flex items-center gap-3 rounded-full border px-3 py-3 transition-colors duration-200 ${
-                      isActive
-                        ? 'border-white/15 bg-white/10 text-white shadow-lg'
-                        : 'border-transparent text-white/70 hover:border-white/10 hover:bg-white/5 hover:text-white'
+                    className={`group/item relative flex w-full items-center gap-3 rounded-full px-3 py-2 text-white/60 transition hover:bg-white/10 hover:text-white ${
+                      isActive ? 'bg-white/10 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.15)]' : ''
                     }`}
                     aria-label={link.label}
                   >
-                    <span className={`flex items-center justify-center text-sm ${isActive ? 'text-white' : 'text-white/70 group-hover/item:text-white'}`}>
+                    <span className="flex h-8 w-8 items-center justify-center">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <div className="hidden min-w-0 flex-1 flex-col group-hover/sidebar:flex">
+                    <div className="hidden min-w-0 flex-1 items-center justify-between group-hover/sidebar:flex">
                       <span className="truncate text-sm font-semibold leading-tight">{link.label}</span>
-                      <span className="text-[11px] text-white/50">{pathname.startsWith(link.path) ? 'Active' : 'Navigate'}</span>
+                      {isActive && <span className="text-[11px] text-white/60">Active</span>}
                     </div>
+                    {isActive && (
+                      <span className="absolute right-[-8px] top-1/2 h-8 w-2 -translate-y-1/2 rounded-full bg-white" aria-hidden />
+                    )}
                   </Link>
                 )
               })}
             </nav>
           </div>
 
-          <div className="space-y-4">
-            <div className="hidden items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 group-hover/sidebar:flex">
-              <span className="h-px flex-1 bg-white/10" />
-              Support
-              <span className="h-px flex-1 bg-white/10" />
-            </div>
+          <div className="w-full space-y-3">
+            <div className="flex items-center gap-2 px-2 text-[10px] uppercase tracking-[0.35em] text-white/40">Support</div>
             <nav className="space-y-2">
               {supportLinks.map((link) => {
                 const isActive = pathname.startsWith(link.path)
@@ -86,47 +75,39 @@ export default function Root() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`group/item relative flex items-center gap-3 rounded-full border px-3 py-3 transition-colors duration-200 ${
-                      isActive
-                        ? 'border-white/15 bg-white/10 text-white shadow-lg'
-                        : 'border-transparent text-white/70 hover:border-white/10 hover:bg-white/5 hover:text-white'
+                    className={`group/item relative flex w-full items-center gap-3 rounded-full px-3 py-2 text-white/60 transition hover:bg-white/10 hover:text-white ${
+                      isActive ? 'bg-white/10 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.15)]' : ''
                     }`}
                     aria-label={link.label}
                   >
-                    <span className={`flex items-center justify-center text-sm ${isActive ? 'text-white' : 'text-white/70 group-hover/item:text-white'}`}>
+                    <span className="flex h-8 w-8 items-center justify-center">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <div className="hidden min-w-0 flex-1 flex-col group-hover/sidebar:flex">
+                    <div className="hidden min-w-0 flex-1 items-center justify-between group-hover/sidebar:flex">
                       <span className="truncate text-sm font-semibold leading-tight">{link.label}</span>
-                      <span className="text-[11px] text-white/50">{pathname.startsWith(link.path) ? 'Active' : 'Stay informed'}</span>
+                      {isActive && <span className="text-[11px] text-white/60">Active</span>}
                     </div>
+                    {isActive && (
+                      <span className="absolute right-[-8px] top-1/2 h-8 w-2 -translate-y-1/2 rounded-full bg-white" aria-hidden />
+                    )}
                   </Link>
                 )
               })}
             </nav>
           </div>
 
-          <div className="mt-auto space-y-4">
-            <div className="hidden flex-col gap-3 text-sm text-white/70 group-hover/sidebar:flex">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-emerald-200" />
-                <div className="leading-tight">
-                  <div className="text-white">Credits available</div>
-                  <div className="text-white/60">90</div>
-                </div>
-              </div>
-              <button className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-white/40">
-                Add credits
-              </button>
+          <div className="mt-auto flex w-full flex-col gap-3 text-sm text-white/60">
+            <div className="hidden w-full flex-col gap-1 group-hover/sidebar:flex">
+              <span className="text-xs uppercase tracking-[0.2em] text-white/40">Credits</span>
+              <span className="text-white">90 available</span>
             </div>
 
-            <button className="hidden items-center gap-2 text-sm font-semibold text-white/80 transition hover:text-white group-hover/sidebar:flex">
-              <LifeBuoy className="h-5 w-5" />
-              <span className="underline decoration-dotted underline-offset-4">Need help? Hover for support</span>
-            </button>
+            <div className="hidden w-full group-hover/sidebar:block">
+              <button className="w-full text-left text-white transition hover:text-white/80">Need help? Hover for support</button>
+            </div>
 
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-              <div className="text-sm font-semibold text-white">NS</div>
+            <div className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-white/80 transition hover:bg-white/10">
+              <div className="h-9 w-9 overflow-hidden rounded-md bg-white/20" />
               <div className="hidden flex-col text-sm group-hover/sidebar:flex">
                 <span className="text-white">Nadine Schneider</span>
                 <span className="text-white/60">Admin · Clipbot</span>
@@ -136,7 +117,7 @@ export default function Root() {
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col px-6 py-8">
+      <div className="ml-16 flex min-h-screen flex-1 flex-col px-6 py-8 transition-[margin] duration-300 group-hover/sidebar:ml-64">
         <main className="pb-12">
           <Outlet />
         </main>
