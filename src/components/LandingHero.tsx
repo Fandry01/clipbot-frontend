@@ -7,10 +7,14 @@ const navLinks = [
   { label: "Docs", href: "#" },
 ]
 
-const stats = [
-  "Save hours every week",
-  "Clips start and end naturally",
-  "Ready for TikTok, Reels, Shorts, LinkedIn",
+const featurePills = [
+  { label: "Auto Subtitles", icon: "CC" },
+  { label: "Brand Kit", icon: "BK" },
+  { label: "Dubbing", icon: "🎙" },
+  { label: "Text to Video AI", icon: "✎" },
+  { label: "AI Clips", icon: "⚡" },
+  { label: "AI Avatars", icon: "👤" },
+  { label: "Recorder", icon: "⏺" },
 ]
 
 const clipCards = [
@@ -135,10 +139,25 @@ function LandingHero() {
           </div>
           <p className="text-sm font-medium text-slate-600">No watermarks on paid plans · Cancel anytime</p>
           <div className="flex flex-wrap justify-center gap-3 text-sm text-slate-700">
-            {stats.map((item) => (
-              <div key={item} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="font-semibold text-slate-700">{item}</span>
+            {featurePills.map((item, index) => (
+              <div
+                key={item.label}
+                className={`flex items-center gap-2 rounded-full border px-3 py-2 shadow-sm transition ${
+                  index === 0
+                    ? "border-blue-200 bg-white/90 ring-1 ring-blue-100"
+                    : "border-slate-200 bg-slate-50"
+                }`}
+              >
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                    index === 0
+                      ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
+                      : "bg-white text-slate-700"
+                  }`}
+                >
+                  {item.icon}
+                </span>
+                <span className="font-semibold text-slate-800">{item.label}</span>
               </div>
             ))}
           </div>
