@@ -111,12 +111,15 @@ function LandingHero() {
           </div>
           <div className="flex w-full flex-col items-center justify-center gap-4">
             <Button
-              size="lg"
-              className="group flex w-full max-w-xs items-center justify-center gap-2 rounded-full shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+              size="sm"
+              className="group flex min-w-[0] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 px-6 py-2 text-sm text-white shadow-[0_12px_30px_rgba(59,130,246,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(59,130,246,0.45)]"
             >
               Start free trial
-              <span className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/40 text-base text-white transition-transform duration-300 group-hover:translate-x-1">
-                →
+              <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-sm text-white transition-transform duration-300 group-hover:translate-x-1">
+                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 8h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  <path d="M8.5 4.5 12 8l-3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </span>
             </Button>
           </div>
