@@ -51,6 +51,15 @@ function LandingHero() {
 
   return (
     <div className="bg-white text-slate-900">
+      <style>
+        {`
+          @keyframes pointerSlide {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(6px); }
+          }
+          .pointer-slide { animation: pointerSlide 1.4s ease-in-out infinite; }
+        `}
+      </style>
       <header className="pointer-events-none fixed inset-x-0 top-0 z-30 flex justify-center pt-4">
         <div
           className={`pointer-events-auto mx-auto flex w-[94%] max-w-5xl items-center gap-6 rounded-full border px-4 py-3 shadow-lg transition-all duration-500 sm:px-6 ${
@@ -112,15 +121,16 @@ function LandingHero() {
           <div className="flex w-full flex-col items-center justify-center gap-4">
             <Button
               size="sm"
-              className="group flex min-w-[0] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 px-6 py-2 text-sm text-white shadow-[0_12px_30px_rgba(59,130,246,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(59,130,246,0.45)]"
+              className="group relative flex min-w-[0] items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(59,130,246,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(59,130,246,0.45)]"
             >
               Start free trial
-              <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-sm text-white transition-transform duration-300 group-hover:translate-x-1">
-                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 8h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  <path d="M8.5 4.5 12 8l-3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-sm text-white transition-transform duration-300 group-hover:translate-x-1 pointer-slide">
+                <svg viewBox="0 0 18 18" className="h-3.5 w-3.5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3.25 9h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  <path d="M9.75 4.75 14 9l-4.25 4.25" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-white/20 opacity-0 transition duration-500 group-hover:translate-x-0 group-hover:opacity-100" />
             </Button>
           </div>
           <p className="text-sm font-medium text-slate-600">No watermarks on paid plans · Cancel anytime</p>
