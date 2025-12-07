@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, UploadCloud, Palette, Settings, Bell } from 'lucide-react'
+import { LayoutDashboard, BookOpen, UploadCloud, Palette, Settings, Bell, Coins } from 'lucide-react'
 
 const mainLinks = [
   { label: 'Dashboard', path: '/dashboard/overview', icon: LayoutDashboard },
@@ -87,9 +87,13 @@ export default function Root() {
           </div>
 
           <div className="mt-auto flex w-full flex-col gap-3 text-sm text-white/60">
-            <div className="hidden w-full flex-col gap-1 group-hover/sidebar:flex">
-              <span className="text-xs uppercase tracking-[0.2em] text-white/40">Credits</span>
-              <span className="text-white">90 available</span>
+            <div className="flex w-full items-center gap-3 rounded-full px-3 py-2 transition hover:bg-white/10">
+              <Coins className="h-5 w-5 text-white" />
+              <div className="hidden flex-col group-hover/sidebar:flex">
+                <span className="text-xs uppercase tracking-[0.2em] text-white/40">Credits</span>
+                <span className="text-white">90 available</span>
+              </div>
+              <span className="text-sm font-semibold text-white group-hover/sidebar:hidden">90</span>
             </div>
 
             <div className="hidden w-full group-hover/sidebar:block">
