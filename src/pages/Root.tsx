@@ -104,7 +104,7 @@ export default function Root() {
 
       <div className="ml-16 flex min-h-screen flex-1 flex-col px-6 py-8 transition-[margin] duration-300 group-hover/sidebar:ml-64">
         <header className="pointer-events-none fixed right-6 top-4 z-30">
-          <div className="pointer-events-auto flex items-center gap-3 rounded-lg bg-[#1f1f1f] px-3 py-2 text-white shadow-lg ring-1 ring-white/10 backdrop-blur">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-lg px-3 py-2 text-white">
             <button
               type="button"
               aria-label="Notifications"
@@ -112,11 +112,11 @@ export default function Root() {
             >
               <Bell className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2 rounded-md bg-[#2a2a2a] px-3 py-1 text-sm font-semibold">
+            <div className="flex items-center gap-2 rounded-md px-3 py-1 text-sm font-semibold">
               <Zap className="h-4 w-4 text-yellow-400" />
               <span className="text-white">60</span>
             </div>
-            <button className="rounded-md bg-[#2a2a2a] px-3 py-1 text-sm font-semibold text-white transition hover:bg-[#343434]">
+            <button className="rounded-md px-3 py-1 text-sm font-semibold text-white transition hover:bg-white/10">
               Add more credits
             </button>
           </div>
