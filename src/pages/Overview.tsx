@@ -26,6 +26,8 @@ export default function Overview() {
   const [source, setSource] = useState<{ type: 'url' | 'file'; value: string; name?: string; file?: File } | null>(null)
   const [uploadPct, setUploadPct] = useState<number | null>(null)
   const [idemKey, setIdemKey] = useState<string | null>(null)
+  const [processingProjectId, setProcessingProjectId] = useState<string | null>(null)
+  const [pendingProject, setPendingProject] = useState<{ id: string; title: string } | null>(null)
 
   const nav = useNavigate()
   const { success, error, info } = useToast()
@@ -38,6 +40,35 @@ export default function Overview() {
   const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
   const showEmpty = !projectsQ.isLoading && !projectsQ.isError && projects.length === 0
+  const projectCards = useMemo(() => {
+    const cards = projects.map((p) => ({
+      id: p.id,
+      title: p.title,
+      thumb: (p as any).thumbnailUrl || '/src/assets/thumb1.jpg',
+      plan: 'Free',
+      status: '—',
+      duration: '',
+      coherence: 0,
+      hook: 0,
+      processingLabel: processingProjectId === p.id ? 'Processing clips…' : undefined,
+    }))
+
+    if (pendingProject && !projects.some((p) => p.id === pendingProject.id)) {
+      cards.unshift({
+        id: pendingProject.id,
+        title: pendingProject.title,
+        thumb: '/src/assets/thumb-fallback.jpg',
+        plan: 'Free',
+        status: '—',
+        duration: '',
+        coherence: 0,
+        hook: 0,
+        processingLabel: 'Processing clips…',
+      })
+    }
+
+    return cards
+  }, [pendingProject, processingProjectId, projects])
 
   const [flowOpen, setFlowOpen] = useState(false)
   const [flowStep, setFlowStep] = useState<{ title: string; subtitle?: string; pct?: number } | null>(null)
@@ -81,7 +112,7 @@ export default function Overview() {
                     </div>
                 )}
 
-                {showEmpty && (
+                {showEmpty && !pendingProject && (
                     <div className="space-y-3">
                       <div className="text-sm text-muted border border-dashed border-border rounded-lg p-6 bg-white/2">
                         No projects yet. Start by pasting a URL or uploading a file above.
@@ -99,21 +130,12 @@ export default function Overview() {
                     </div>
                 )}
 
-                {projects.length > 0 && (
+                {projectCards.length > 0 && (
                     <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-                      {projects.map((p) => (
+                      {projectCards.map((p) => (
                           <ProjectCard
                               key={p.id}
-                              project={{
-                                id: p.id,
-                                title: p.title,
-                                thumb: (p as any).thumbnailUrl || '/src/assets/thumb1.jpg',
-                                plan: 'Free',
-                                status: '—',
-                                duration: '',
-                                coherence: 0,
-                                hook: 0,
-                              }}
+                              project={p}
                           />
                       ))}
                     </div>
@@ -183,7 +205,10 @@ export default function Overview() {
 
                     setStep('All set ✅', 'Opening your clips…', 100)
                     success('Flow started')
-                    nav(`/dashboard/project/${res.projectId}`)
+                    setProcessingProjectId(res.projectId)
+                    setPendingProject({ id: res.projectId, title })
+                    setSource(null)
+                    nav('/dashboard/overview')
                     projectsQ.refetch().catch(() => {})
                   } catch (e: any) {
                     const msg = e?.response?.data || e?.message || 'Failed to start'

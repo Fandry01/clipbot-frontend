@@ -9,6 +9,7 @@ export type Project = {
   duration?: string
   coherence?: number
   hook?: number
+  processingLabel?: string
 }
 
 function planBadge(plan?: string) {
@@ -55,6 +56,7 @@ export default function ProjectCard({ project }: { project: Project }) {
     duration,
     coherence,
     hook,
+    processingLabel,
   } = project
 
   const coh = typeof coherence === 'number' ? coherence : 0
@@ -96,6 +98,10 @@ export default function ProjectCard({ project }: { project: Project }) {
           <div className="text-xs text-muted">{duration}</div>
         ) : (
           <div className="text-xs text-muted">—</div>
+        )}
+
+        {processingLabel && (
+          <div className="text-[11px] text-muted leading-tight">{processingLabel}</div>
         )}
       </div>
 

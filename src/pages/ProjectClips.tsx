@@ -104,6 +104,7 @@ export default function ProjectClips() {
 
   // Kies bron: sample of api
   const uiClipsRaw = isSample ? sampleClips : apiUiClips
+  const isProcessingClips = !isSample && (isLoading || pages[0]?.totalElements === 0)
 
   // Client-side lichte filters (score/CC)
   const filtered = useMemo(() => {
@@ -292,8 +293,8 @@ export default function ProjectClips() {
 
         {/* Grid */}
         <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
-          {isLoading ? (
-              Array.from({ length: 8 }).map((_, i) => (
+          {isProcessingClips ? (
+              Array.from({ length: 7 }).map((_, i) => (
                   <div key={i} className="h-64 rounded-lg bg-white/5 animate-pulse" />
               ))
           ) : (
