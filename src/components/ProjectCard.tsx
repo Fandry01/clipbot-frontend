@@ -17,7 +17,7 @@ function planBadge(plan?: string) {
   if (plan === 'Pro') {
     return (
         <span className="badge bg-purple-500/20 text-purple-200 border-purple-500/40">
-        Pro
+        Pro Plan
       </span>
     )
   }
@@ -25,7 +25,7 @@ function planBadge(plan?: string) {
   if (plan === 'Free') {
     return (
         <span className="badge bg-sky-500/20 text-sky-100 border-sky-500/40">
-        Free
+        Free Plan
       </span>
     )
   }
