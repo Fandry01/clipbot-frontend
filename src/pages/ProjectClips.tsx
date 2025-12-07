@@ -95,6 +95,10 @@ export default function ProjectClips() {
       })
       : null
 
+  const isLoading = inf?.isLoading ?? false
+  const isFetchingNext = inf?.isFetchingNextPage ?? false
+  const hasNext = inf?.hasNextPage ?? false
+
   // Pages samenvoegen → UI model
   const pages = inf?.data?.pages ?? []
   const apiUiClips = useMemo(
@@ -116,9 +120,6 @@ export default function ProjectClips() {
     })
   }, [uiClipsRaw, ccOnly, score])
 
-  const isLoading = inf?.isLoading ?? false
-  const isFetchingNext = inf?.isFetchingNextPage ?? false
-  const hasNext = inf?.hasNextPage ?? false
   const totalDisplay = isSample
       ? filtered.length
       : pages[0]?.totalElements ?? filtered.length // Spring Page heeft totalElements op page 0
