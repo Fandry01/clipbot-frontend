@@ -116,7 +116,7 @@ export default function Root() {
               <Zap className="h-4 w-4 text-yellow-400" />
               <span className="text-white">60</span>
             </div>
-            <button className="rounded-md px-3 py-1 text-sm font-semibold text-white transition hover:bg-white/10">
+            <button className="rounded-md bg-gray-200 px-3 py-1 text-sm font-semibold text-gray-900 transition hover:bg-gray-300">
               Add more credits
             </button>
           </div>
