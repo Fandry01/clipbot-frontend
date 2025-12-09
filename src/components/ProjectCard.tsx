@@ -39,6 +39,7 @@ function statusBadge(status?: string) {
   const map: Record<string, string> = {
     Ready: 'badge bg-lime-400/20 text-lime-200 border-lime-400/60 shadow-[0_0_12px_rgba(190,242,100,0.45)]',
     Rendering: 'badge bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    NEW: 'badge bg-indigo-500/20 text-indigo-100 border-indigo-400/40 shadow-[0_0_12px_rgba(129,140,248,0.35)]',
     Error: 'badge bg-red-500/20 text-red-300 border-red-500/30',
     Demo: 'badge',
   }

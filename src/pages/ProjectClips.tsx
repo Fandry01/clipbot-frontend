@@ -11,6 +11,7 @@ import { useToast } from '../components/Toast'
 
 const externalSubject =
   localStorage.getItem('externalSubject') || 'demo-user-1'
+const VISITED_PROJECTS_KEY = 'visitedProjectIds'
 
 type DurFilter = 'all' | 'lt30' | '30to60' | 'gt60'
 type ScoreFilter = 'all' | '70' | '80' | '90'
@@ -47,6 +48,22 @@ export default function ProjectClips() {
   const { id: projectId = '' } = useParams()
   const isSample = projectId === SAMPLE_PROJECT_ID
   const nav = useNavigate()
+
+  useEffect(() => {
+    if (isSample || !projectId) return
+
+    try {
+      const raw = localStorage.getItem(VISITED_PROJECTS_KEY)
+      const existing = raw ? JSON.parse(raw) : []
+      const ids = Array.isArray(existing) ? new Set<string>(existing as string[]) : new Set<string>()
+      if (!ids.has(projectId)) {
+        ids.add(projectId)
+        localStorage.setItem(VISITED_PROJECTS_KEY, JSON.stringify(Array.from(ids)))
+      }
+    } catch (e) {
+      console.warn('Failed to mark project as visited', e)
+    }
+  }, [isSample, projectId])
 
   // URL-state
   const [sp, setSp] = useSearchParams()

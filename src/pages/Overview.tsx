@@ -1,6 +1,6 @@
 // src/pages/Overview.tsx
 import { v4 as uuidv4 } from 'uuid'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CenterUploadCard from '../components/CenterUploadCard'
 import QuickActionsRail from '../components/QuickActionsRail'
@@ -22,12 +22,38 @@ const externalSubject =
     localStorage.getItem('externalSubject') || 'demo-user-1'
 localStorage.setItem('externalSubject', externalSubject)
 
+const VISITED_PROJECTS_KEY = 'visitedProjectIds'
+
+const readVisitedProjects = () => {
+  try {
+    const raw = localStorage.getItem(VISITED_PROJECTS_KEY)
+    if (!raw) return { ids: new Set<string>(), hasStoredValue: false }
+    const parsed = JSON.parse(raw)
+    return {
+      ids: Array.isArray(parsed) ? new Set<string>(parsed as string[]) : new Set<string>(),
+      hasStoredValue: true,
+    }
+  } catch (e) {
+    console.warn('Failed to parse visited projects', e)
+    return { ids: new Set<string>(), hasStoredValue: false }
+  }
+}
+
+const persistVisitedProjects = (ids: Set<string>) => {
+  try {
+    localStorage.setItem(VISITED_PROJECTS_KEY, JSON.stringify(Array.from(ids)))
+  } catch (e) {
+    console.warn('Failed to persist visited projects', e)
+  }
+}
+
 export default function Overview() {
   const [source, setSource] = useState<{ type: 'url' | 'file'; value: string; name?: string; file?: File } | null>(null)
   const [uploadPct, setUploadPct] = useState<number | null>(null)
   const [idemKey, setIdemKey] = useState<string | null>(null)
   const [processingProjectId, setProcessingProjectId] = useState<string | null>(null)
   const [pendingProject, setPendingProject] = useState<{ id: string; title: string } | null>(null)
+  const [visitedState, setVisitedState] = useState(() => readVisitedProjects())
 
   const nav = useNavigate()
   const { success, error, info } = useToast()
@@ -39,19 +65,36 @@ export default function Overview() {
 
   const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
   const projects = useMemo(() => projectsQ.data?.content ?? [], [projectsQ.data])
+  useEffect(() => {
+    if (processingProjectId && projects.some((p) => p.id === processingProjectId)) {
+      setProcessingProjectId(null)
+      setPendingProject(null)
+    }
+  }, [processingProjectId, projects])
+  useEffect(() => {
+    if (!visitedState.hasStoredValue && projects.length > 0) {
+      const next = new Set(projects.map((p) => p.id))
+      setVisitedState({ ids: next, hasStoredValue: true })
+      persistVisitedProjects(next)
+    }
+  }, [projects, visitedState.hasStoredValue])
   const showEmpty = !projectsQ.isLoading && !projectsQ.isError && projects.length === 0
   const projectCards = useMemo(() => {
-    const cards = projects.map((p) => ({
-      id: p.id,
-      title: p.title,
-      thumb: (p as any).thumbnailUrl || '/src/assets/thumb1.jpg',
-      plan: 'Free',
-      status: '—',
-      duration: '',
-      coherence: 0,
-      hook: 0,
-      processingLabel: processingProjectId === p.id ? 'Processing clips…' : undefined,
-    }))
+    const cards = projects.map((p) => {
+      const isProcessing = processingProjectId === p.id
+      const isVisited = visitedState.ids.has(p.id)
+      return {
+        id: p.id,
+        title: p.title,
+        thumb: (p as any).thumbnailUrl || '/src/assets/thumb1.jpg',
+        plan: 'Free',
+        status: !isProcessing && !isVisited ? 'NEW' : '—',
+        duration: '',
+        coherence: 0,
+        hook: 0,
+        processingLabel: isProcessing ? 'Processing clips…' : undefined,
+      }
+    })
 
     if (pendingProject && !projects.some((p) => p.id === pendingProject.id)) {
       cards.unshift({
@@ -68,7 +111,7 @@ export default function Overview() {
     }
 
     return cards
-  }, [pendingProject, processingProjectId, projects])
+  }, [pendingProject, processingProjectId, projects, visitedState.ids])
 
   const [flowOpen, setFlowOpen] = useState(false)
   const [flowStep, setFlowStep] = useState<{ title: string; subtitle?: string; pct?: number } | null>(null)
