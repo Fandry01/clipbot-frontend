@@ -19,7 +19,7 @@ const ClipPlayer = forwardRef<PlayerHandle, Props>(function ClipPlayer(
 ) {
   void _enableQuality
   // Haal assets op
-  const { data: mp4 } = useLatestClipAsset(clipId, 'MP4', ownerExternalSubject)
+  const { data: mp4 } = useLatestClipAsset(clipId, 'CLIP_MP4_CLEAN', ownerExternalSubject)
   const { data: thumb } = useLatestClipAsset(clipId, 'THUMBNAIL', ownerExternalSubject)
   const { data: vtt } = useLatestClipAsset(clipId, 'SUB_VTT',ownerExternalSubject)
 

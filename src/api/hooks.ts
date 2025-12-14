@@ -9,7 +9,7 @@ import axios from 'axios'
 import { fileOutUrl } from '../api/file'
 import {useEffect, useRef, useState} from "react";
 
-export type AssetKind = 'MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT'
+export type AssetKind = 'MP4' | 'THUMBNAIL' | 'SUB_SRT' | 'SUB_VTT' | 'CLIP_MP4_CLEAN'
 
 /** ====== PROJECTS ====== */
 export function useProjects(ownerId: UUID, page=0, size=12) {
