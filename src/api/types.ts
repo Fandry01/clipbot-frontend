@@ -35,6 +35,21 @@ export type MediaResponse = {
   externalUrl?: string | null
 }
 
+export type CreateMediaFromUrlRequest = {
+  ownerId: UUID
+  url: string
+  source?: string
+  podcastOrInterview?: boolean // optional hint for long-form audio (podcast/interview)
+}
+
+export type UploadLocalRequest = {
+  owner: string
+  file: File
+  objectKey?: string
+  podcastOrInterview?: boolean // defaults to false if omitted
+  onProgress?: (pct: number) => void
+}
+
 export type MetadataResponse = {
   platform: string
   url: string

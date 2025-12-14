@@ -2,8 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { api, getErr } from './client'
 import type {
-  Page, ProjectResponse, ProjectListItem, MediaResponse, MetadataResponse, ClipResponse,
-  TranscriptResponse, JobResponse, TemplateResponse, AppliedTemplateResponse, UUID
+  AppliedTemplateResponse,
+  ClipResponse,
+  CreateMediaFromUrlRequest,
+  JobResponse,
+  MediaResponse,
+  MetadataResponse,
+  Page,
+  ProjectListItem,
+  ProjectResponse,
+  TemplateResponse,
+  TranscriptResponse,
+  UploadLocalRequest,
+  UUID,
 } from './types'
 import axios from 'axios'
 import { fileOutUrl } from '../api/file'
@@ -134,8 +145,9 @@ export function useMetadata(url?: string) {
 
 export function useCreateMediaFromUrl() {
   return useMutation({
-    mutationFn: async (p: { ownerId: UUID; url: string; source?: string }) => {
-      const { data } = await api.post(`/v1/media/from-url`, p)
+    mutationFn: async (p: CreateMediaFromUrlRequest) => {
+      const payload = { ...p, podcastOrInterview: p.podcastOrInterview ?? false }
+      const { data } = await api.post(`/v1/media/from-url`, payload)
       return data as { mediaId: UUID; status: string; platform: string; durationMs?: number|null; thumbnail?: string|null; normalizedUrl?: string|null }
     }
   })
@@ -144,11 +156,13 @@ export function useCreateMediaFromUrl() {
 export function useUploadLocal() {
   const controllerRef = { current: null as AbortController | null }
 
-  const upload = async (p: { owner: string; file: File; objectKey?: string; onProgress?: (pct:number)=>void }) => {
+  const upload = async (p: UploadLocalRequest) => {
+    const podcastOrInterview = p.podcastOrInterview ?? false
     const form = new FormData()
     form.append('owner', p.owner)
     form.append('file', p.file)
     if (p.objectKey) form.append('objectKey', p.objectKey)
+    form.append('podcastOrInterview', String(podcastOrInterview))
 
     const ctrl = new AbortController()
     controllerRef.current = ctrl
@@ -159,6 +173,7 @@ export function useUploadLocal() {
       {
         signal: ctrl.signal,
         headers: { 'Content-Type': 'multipart/form-data' },
+        params: { podcastOrInterview },
         onUploadProgress: (e) => {
           if (p.onProgress && e.total) p.onProgress(Math.round((e.loaded / e.total) * 100))
         }
