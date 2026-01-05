@@ -1,12 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+// vite.config.ts
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import tailwindcss from "@tailwindcss/vite"
+import { fileURLToPath } from "node:url"
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   server: {
     proxy: {
-      // alle backend calls door de dev server proxien -> zelfde origin/port
-        '^/v1': { target: 'http://localhost:8080', changeOrigin: true }
-  }
-  }
+      "^/v1": { target: "http://localhost:8080", changeOrigin: true },
+    },
+  },
 })

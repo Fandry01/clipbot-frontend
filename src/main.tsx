@@ -5,9 +5,12 @@ import {
   RouterProvider,
   Navigate,
 } from 'react-router-dom'
+import { ThemeProvider } from "./components/theme-provider"
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastProvider } from './components/Toast'
-import Root from './pages/Root'
+import DashboardLayout from "./layouts/dashboardLayout"
+
 import Overview from './pages/Overview'
 import Library from './pages/Library'
 import Uploads from './pages/Uploads'
@@ -26,7 +29,7 @@ if (!localStorage.getItem('ownerId')) {
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root />,
+    element: <DashboardLayout />,
     children: [
       // redirect van "/" naar overview
       { index: true, element: <Navigate to="/dashboard/overview" replace /> },
@@ -47,10 +50,12 @@ const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ToastProvider>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-    </ToastProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ToastProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+      </ToastProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

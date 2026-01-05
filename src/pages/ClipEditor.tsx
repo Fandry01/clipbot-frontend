@@ -13,6 +13,8 @@ import {
     getSubtitleFont,
 } from '../subtitles/styles'
 import ExportFlowModal from '../components/ExportFlowModal'
+import { Button } from "../components/ui/button"
+
 
 
 // ✅ lokaal trim-type + helpers
@@ -244,10 +246,18 @@ export default function ClipEditor() {
                 <div className="flex items-center justify-between">
                     <div className="text-sm text-muted">Editing clip {id}</div>
                     <div className="flex items-center gap-2">
-                        <button className="btn-ghost" onClick={undo} disabled={!undoStack.length}>↶ Undo</button>
-                        <button className="btn-ghost" onClick={redo} disabled={!redoStack.length}>↷ Redo</button>
-                        <button className="btn-primary" onClick={saveTrim}>Save</button>
-                        <button className="btn-ghost" onClick={() => nav(-1)}>Back</button>
+                    <Button variant="ghost" onClick={undo} disabled={!undoStack.length}>
+                        ↶ Undo
+                    </Button>
+                    <Button variant="ghost" onClick={redo} disabled={!redoStack.length}>
+                        ↷ Redo
+                    </Button>
+                    <Button onClick={saveTrim}>
+                        Save
+                    </Button>
+                    <Button variant="ghost" onClick={() => nav(-1)}>
+                        Back
+                    </Button>
                     </div>
                 </div>
 
@@ -328,27 +338,30 @@ export default function ClipEditor() {
 
                     {/* onderste controls blijven hetzelfde */}
                     <div className="flex items-center gap-2 mt-1 text-sm">
-                        <button className="btn-ghost" onClick={() => push({...trim, in: Math.max(0, currentTime)})}>
+                        <Button variant="ghost" size="sm" onClick={() => push({...trim, in: Math.max(0, currentTime)})}>
                             I (Set In)
-                        </button>
-                        <button
-                            className="btn-ghost"
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size= "sm"
                             onClick={() => push({...trim, out: Math.max(currentTime, trim.in + 0.05)})}
                         >
                             O (Set Out)
-                        </button>
-                        <button
-                            className="btn-ghost"
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size= "sm"
                             onClick={() => push({in: Math.max(0, trim.in - 0.2), out: trim.out})}
                         >
                             -0.2s In
-                        </button>
-                        <button
-                            className="btn-ghost"
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size= "sm"
                             onClick={() => push({in: trim.in, out: trim.out + 0.2})}
                         >
                             +0.2s Out
-                        </button>
+                        </Button>
                         <div className="ml-auto text-muted text-xs">
                             Range {fmt(trim.in)}–{fmt(trim.out)} · est. total {fmt(TOTAL_SECONDS)}
                         </div>
@@ -463,7 +476,7 @@ export default function ClipEditor() {
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs">Subtitle font:</span>
                                         <span className="badge">
-                      {brandTpl.subtitleFontId || 'preset default'}
+                                    {brandTpl.subtitleFontId || 'preset default'}
                     </span>
                                     </div>
                                     {brandTpl.brandLogoDataUrl && (
@@ -494,9 +507,9 @@ export default function ClipEditor() {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Preset</span>
-                                <button className="btn-ghost">TikTok (9:16)</button>
-                                <button className="btn-ghost">YouTube (16:9)</button>
-                                <button className="btn-ghost">Square (1:1)</button>
+                                <Button variant="outline" size="sm" className="rounded-full">TikTok (9:16)</Button>
+                                <Button variant="outline" size="sm" className="rounded-full">YouTube (16:9)</Button>
+                                <Button variant="outline" size="sm" className="rounded-full">Square (1:1)</Button>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm">Resolution</span>
@@ -510,12 +523,12 @@ export default function ClipEditor() {
                                 style.
                             </div>
 
-                            <button
-                                className="btn-primary mt-2"
+                            <Button
+                                className="mt-2"
                                 onClick={() => setShowExportModal(true)}
                             >
                                 Export options…
-                            </button>
+                            </Button>
 
                             {lastExportJobId && (
                                 <div className="text-[11px] text-muted mt-1">
@@ -530,18 +543,21 @@ export default function ClipEditor() {
 
             {/* RIGHT: side tools */}
             <div className="space-y-3 lg:sticky lg:top-20 h-fit">
-                <div className="card p-3 flex items-center gap-2">
+                <div className="card p-3 flex items-center gap-2 flex-wrap">
                     <span className="text-sm">Aspect</span>
                     {(['16:9', '1:1', '9:16'] as const).map(a => (
-                        <button
+                        <Button
                             key={a}
+                            type="button"
+                            size="sm"
+                            variant={aspect === a ?"default" : "outline"}
                             className={`px-3 py-1 rounded-full text-sm border ${
                                 aspect === a ? 'bg-white text-black border-white' : 'border-border hover:bg-white/5'
                             }`}
                             onClick={() => setAspect(a)}
                         >
                             {a}
-                        </button>
+                        </Button>
                     ))}
                 </div>
                 <QualityChecklist qc={qc} />
