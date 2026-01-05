@@ -145,9 +145,8 @@ export function useMetadata(url?: string) {
 
 export function useCreateMediaFromUrl() {
   return useMutation({
-    mutationFn: async (p: CreateMediaFromUrlRequest) => {
-      const payload = { ...p, podcastOrInterview: p.podcastOrInterview ?? false }
-      const { data } = await api.post(`/v1/media/from-url`, payload)
+    mutationFn: async (p: { ownerId: UUID; url: string; source?: string; podcastOrInterview?: boolean }) => {
+      const { data } = await api.post(`/v1/media/from-url`, p)
       return data as { mediaId: UUID; status: string; platform: string; durationMs?: number|null; thumbnail?: string|null; normalizedUrl?: string|null }
     }
   })

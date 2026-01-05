@@ -12,41 +12,47 @@ export type SubtitleStyle = {
     wrapStyle: 0 | 1 | 2
 }
 export type SubtitleFont = {
-    id: SubtitleFontId
-    label: string
-    /** CSS font-family stack voor de browser preview */
-    css: string
-    /** Exacte fontnaam zoals FFmpeg/ASS die moet kennen */
-    ass: string
+  id: SubtitleFontId
+  label: string
+  /** CSS font-family stack voor de browser preview */
+  css: string
+  /** Exacte fontnaam zoals FFmpeg/ASS die moet kennen */
+  ass: string
+  /** (browser) Google Fonts stylesheet url (optioneel) */
+  href?: string
 }
 
 export type SubtitleFontId = 'roboto' | 'montserrat' | 'helvetica' | 'bold_display'
 
 export const SUBTITLE_FONTS: Record<SubtitleFontId, SubtitleFont> = {
-    roboto: {
-        id: 'roboto',
-        label: 'Roboto',
-        css: 'Roboto, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        ass: 'Roboto',
-    },
-    montserrat: {
-        id: 'montserrat',
-        label: 'Montserrat',
-        css: 'Montserrat, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        ass: 'Montserrat',
-    },
-    helvetica: {
-        id: 'helvetica',
-        label: 'Helvetica',
-        css: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-        ass: 'Helvetica Neue', // match dit met de echte naam van je TTF
-    },
-    bold_display: {
-        id: 'bold_display',
-        label: 'Bold display',
-        css: '"Anton", "Oswald", system-ui, sans-serif',
-        ass: 'Anton', // of 'Oswald' – wat jij in de render container installeert
-    },
+  roboto: {
+    id: 'roboto',
+    label: 'Roboto',
+    css: 'Roboto, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    ass: 'Roboto',
+    href: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap',
+  },
+  montserrat: {
+    id: 'montserrat',
+    label: 'Montserrat',
+    css: 'Montserrat, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    ass: 'Montserrat',
+    href: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap',
+  },
+  helvetica: {
+    id: 'helvetica',
+    label: 'Helvetica',
+    css: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    ass: 'Helvetica Neue',
+    // geen href: system font
+  },
+  bold_display: {
+    id: 'bold_display',
+    label: 'Bold display',
+    css: '"Anton", system-ui, sans-serif',
+    ass: 'Anton',
+    href: 'https://fonts.googleapis.com/css2?family=Anton&display=swap',
+  },
 }
 
 

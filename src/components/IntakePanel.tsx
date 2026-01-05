@@ -40,7 +40,7 @@ export default function IntakePanel({
 }) {
     // essentials
     const [lang, setLang] = useState('en')
-    const [genre, setGenre] = useState<'auto'|'educational'|'podcast'|'vlog'|'gaming'>('auto')
+    const [genre, setGenre] = useState<'auto'|'educational'|'podcast'|'interview'|'vlog'|'gaming'>('auto')
     const [clipLength, setClipLength] = useState<'auto'|'short'|'0-30s'|'0-60s'|'0-3m'>('auto')
 
     // advanced (collapsed)
@@ -71,9 +71,12 @@ export default function IntakePanel({
     }, [from, to, model])
 
     const handleStart = async () => {
+        const podcastOrInterview = genre === 'podcast' || genre === 'interview'
+
         await onStartJob({
             source, lang, genre, clipLength,
-            model, prompt, srtName, from, to, estimatedCredits: credits
+            model, prompt, srtName, from, to, estimatedCredits: credits,
+            podcastOrInterview,
         })
     }
 
@@ -169,7 +172,7 @@ export default function IntakePanel({
                     value={genre}
                     onChange={(v)=>setGenre(v as any)}
                     options={[
-                        {value:'auto', label:'Auto'}, {value:'educational', label:'Educational'}, {value:'podcast', label:'Podcast'}, {value:'vlog', label:'Vlog'}, {value:'gaming', label:'Gaming'}
+                        {value:'auto', label:'Auto'}, {value:'educational', label:'Educational'}, {value:'podcast', label:'Podcast'}, {value:'interview', label:'Interview'}, {value:'vlog', label:'Vlog'}, {value:'gaming', label:'Gaming'}
                     ]}
                     disabled={disabled}
                 />

@@ -12,6 +12,7 @@ import FlowProgressOverlay from '../components/FlowProgressOverlay'
 import {
   useProjectsBySubject,
   useMetadata,
+  useCreateMediaFromUrl,
   useUploadLocal,
   useOneClickOrchestrate,
 } from '../api/hooks'
@@ -61,6 +62,7 @@ export default function Overview() {
   // data hooks
   const projectsQ = useProjectsBySubject(externalSubject, 0, 12)
   const uploadLocal = useUploadLocal()
+  const createMediaFromUrl = useCreateMediaFromUrl()
   const orchestrate = useOneClickOrchestrate()
 
   const metaQ = useMetadata(source?.type === 'url' ? source.value : undefined)
@@ -188,11 +190,11 @@ export default function Overview() {
         ) : (
             <IntakePanel
                 source={source}
-                disabled={orchestrate.isPending || uploadPct !== null || metaQ.isFetching}
+                disabled={orchestrate.isPending || createMediaFromUrl.isPending || uploadPct !== null || metaQ.isFetching}
                 busyLabel={
                   uploadPct !== null
                       ? `Uploading… ${uploadPct}%`
-                      : orchestrate.isPending
+                      : (orchestrate.isPending || createMediaFromUrl.isPending)
                           ? 'Starting…'
                           : undefined
                 }
@@ -207,11 +209,20 @@ export default function Overview() {
                     setStep('Preparing…', 'Initializing workflow')
                     let mediaId: string | undefined = undefined
                     let url: string | undefined = undefined
+                    const podcastOrInterview = payload?.podcastOrInterview === true
 
                     let title = (payload?.title ?? metaQ.data?.title ?? (source?.type === 'file' ? 'New upload' : 'New project')).trim()
 
                     if (source?.type === 'url') {
                       url = source.value
+                      setStep('Registering media…', 'Fetching source')
+                      const created = await createMediaFromUrl.mutateAsync({
+                        ownerId: externalSubject,
+                        url,
+                        podcastOrInterview,
+                      })
+                      mediaId = created.mediaId
+                      url = created.normalizedUrl ?? url
                     } else {
                       const file = source.file
                       if (!file) throw new Error('No file in source')
@@ -228,7 +239,7 @@ export default function Overview() {
                     setStep('Ingest + detect + recommendations', 'Scheduling background jobs')
                     const res = await orchestrate.mutateAsync({
                       ownerExternalSubject: externalSubject,
-                      url,
+                      url: mediaId ? undefined : url,
                       mediaId,
                       title,
                       idempotencyKey,
